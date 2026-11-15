@@ -23,7 +23,7 @@ const KEY_HELP: Record<Provider, { name: string; steps: string[]; url: string; u
     urlLabel: 'Google AI Studio',
     host: 'generativelanguage.googleapis.com',
     placeholder: 'AIza…',
-    modelNote: 'Flash = rychlý a v bezplatném limitu. Po vložení klíče se načtou modely, které máš k dispozici.',
+    modelNote: 'Doporučeno: gemini-flash-latest (vždy nejnovější Flash, rychlý a v bezplatném limitu). Pro = chytřejší, ale pomalejší a s menším bezplatným limitem.',
   },
   anthropic: {
     name: 'Anthropic Claude – placené',
@@ -102,7 +102,7 @@ export default function Settings() {
   const modelField = MODEL_FIELD[s.provider];
   const [geminiModels, setGeminiModels] = useState<string[]>([]);
   const [loadingModels, setLoadingModels] = useState(false);
-  const models = s.provider === 'openai' ? OPENAI_MODELS : s.provider === 'gemini' ? (geminiModels.length ? geminiModels.slice(0, 8) : GEMINI_MODELS) : ANTHROPIC_MODELS;
+  const models = s.provider === 'openai' ? OPENAI_MODELS : s.provider === 'gemini' ? (geminiModels.length ? geminiModels.slice(0, 6) : GEMINI_MODELS) : ANTHROPIC_MODELS;
   const custom = !models.includes(s[modelField]);
   const help = KEY_HELP[s.provider];
 
@@ -112,11 +112,7 @@ export default function Settings() {
     try {
       const list = await listGeminiModels(s.geminiKey);
       setGeminiModels(list);
-      if (list.length && !list.includes(s.geminiModel)) {
-        // prefer the newest stable Flash model: fast, cheap and with a generous free tier
-        const pick = list.find((m) => /^gemini-[\d.]+-flash$/.test(m)) ?? list.find((m) => m.includes('flash')) ?? list[0];
-        set({ geminiModel: pick });
-      }
+      if (list.length && !list.includes(s.geminiModel)) set({ geminiModel: list[0] });
       toast(`Načteno ${list.length} modelů`);
     } catch (e) {
       toast((e as Error).message);

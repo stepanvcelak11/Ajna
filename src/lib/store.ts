@@ -11,7 +11,7 @@ export const defaultSettings: Settings = {
   geminiKey: '',
   openaiModel: 'gpt-4o-mini',
   anthropicModel: 'claude-sonnet-5-5',
-  geminiModel: 'gemini-2.5-flash',
+  geminiModel: 'gemini-flash-latest',
   accent: 'en-US',
   theme: 'dark',
   ttsRate: 1,
@@ -39,7 +39,7 @@ export function normalize(data: unknown): AppState {
   const base = initial();
   return {
     version: 1,
-    settings: { ...base.settings, ...(d.settings ?? {}) },
+    settings: migrateSettings({ ...base.settings, ...(d.settings ?? {}) }),
     vocab: Array.isArray(d.vocab) ? d.vocab : [],
     mistakes: Array.isArray(d.mistakes) ? d.mistakes : [],
     days: d.days && typeof d.days === 'object' ? d.days : {},
@@ -47,7 +47,14 @@ export function normalize(data: unknown): AppState {
   };
 }
 
+function migrateSettings(s: Settings): Settings {
+  // gemini-2.5-flash (old default) is no longer offered to new API users
+  if (s.geminiModel === 'gemini-2.5-flash') return { ...s, geminiModel: 'gemini-flash-latest' };
+  return s;
+}
+
 let state: AppState = load();
+persist(); // write back any migrated settings
 const listeners = new Set<() => void>();
 
 function persist() {

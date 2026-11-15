@@ -1,4 +1,4 @@
-import { getState } from './store';
+import { getState, updateSettings } from './store';
 
 export class LlmError extends Error {}
 
@@ -6,7 +6,7 @@ export const OPENAI_MODELS = ['gpt-4o-mini', 'gpt-4o'];
 // Current Anthropic generation (the 3.5 models are retired).
 export const ANTHROPIC_MODELS = ['claude-haiku-5-5', 'claude-sonnet-5-5', 'claude-opus-5-5'];
 // Shown until the real list is fetched for the user's key.
-export const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.5-pro'];
+export const GEMINI_MODELS = ['gemini-flash-latest', 'gemini-pro-latest', 'gemini-flash-lite-latest'];
 
 export function hasKey() {
   const s = getState().settings;
@@ -111,9 +111,12 @@ async function callAnthropic({ system, user, schema, maxTokens = 2500, signal }:
 
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 
-async function callGemini({ system, user, schema, maxTokens = 2500, signal }: CallOpts) {
+export const GEMINI_DEFAULT = 'gemini-flash-latest';
+
+async function callGemini(opts: CallOpts, retried = false): Promise<unknown> {
+  const { system, user, schema, maxTokens = 2500, signal } = opts;
   const s = getState().settings;
-  const model = (s.geminiModel || 'gemini-2.5-flash').replace(/^models\//, '');
+  const model = (s.geminiModel || GEMINI_DEFAULT).replace(/^models\//, '');
   const res = await fetch(`${GEMINI_BASE}/models/${encodeURIComponent(model)}:generateContent`, {
     method: 'POST',
     signal,
@@ -126,7 +129,19 @@ async function callGemini({ system, user, schema, maxTokens = 2500, signal }: Ca
       generationConfig: { responseMimeType: 'application/json', maxOutputTokens: Math.max(maxTokens, 4000) },
     }),
   });
-  if (!res.ok) throw new LlmError(await errText(res));
+  if (!res.ok) {
+    const msg = await errText(res);
+    // Retired / unavailable model: switch to the model Google suggests (or the "latest" alias) and retry once.
+    if (!retried && (res.status === 404 || res.status === 400) && /no longer available|not found|not supported|deprecated/i.test(msg)) {
+      const suggested = msg.match(/use (?:models\/)?(gemini-[\w.-]*\w)/i)?.[1];
+      const next = suggested && suggested !== model ? suggested : model !== GEMINI_DEFAULT ? GEMINI_DEFAULT : null;
+      if (next) {
+        updateSettings({ geminiModel: next });
+        return callGemini(opts, true);
+      }
+    }
+    throw new LlmError(msg);
+  }
   const data = await res.json();
   const cand = data.candidates?.[0];
   if (!cand) throw new LlmError('Gemini nevrátil odpověď (možná zablokováno filtrem). Zkus to znovu.');
@@ -137,7 +152,19 @@ async function callGemini({ system, user, schema, maxTokens = 2500, signal }: Ca
   return extractJson(text);
 }
 
-/** Lists Gemini models usable with generateContent for this key (newest first). */
+/** Rank text models: "-latest" aliases first, then Flash before Pro, newest version first, previews last. */
+function geminiRank(n: string) {
+  const ver = parseFloat(n.match(/gemini-(?:[a-z]+-)?(\d+(?:\.\d+)?)/)?.[1] ?? '0');
+  let score = ver * 10;
+  if (/-latest$/.test(n)) score += 1000;
+  if (/flash/.test(n) && !/lite/.test(n)) score += 300;
+  else if (/pro/.test(n)) score += 200;
+  else if (/lite/.test(n)) score += 100;
+  if (/preview|exp|\d{2}-\d{2}|\d{3,}$/.test(n)) score -= 500;
+  return score;
+}
+
+/** Lists Gemini text models usable with generateContent for this key (best first). */
 export async function listGeminiModels(key: string): Promise<string[]> {
   const res = await fetch(`${GEMINI_BASE}/models?pageSize=200`, { headers: { 'x-goog-api-key': key.trim() } });
   if (!res.ok) throw new LlmError(await errText(res));
@@ -145,8 +172,8 @@ export async function listGeminiModels(key: string): Promise<string[]> {
   return (data.models ?? [])
     .filter((m: { supportedGenerationMethods?: string[] }) => m.supportedGenerationMethods?.includes('generateContent'))
     .map((m: { name: string }) => m.name.replace(/^models\//, ''))
-    .filter((n: string) => /^gemini-/.test(n) && !/(image|tts|audio|embedding|live|vision|computer)/.test(n))
-    .sort((a: string, b: string) => b.localeCompare(a, undefined, { numeric: true }));
+    .filter((n: string) => /^gemini-/.test(n) && !/(image|tts|audio|embedding|live|vision|computer|robotics|banana|nano|veo|imagen|omni)/.test(n))
+    .sort((a: string, b: string) => geminiRank(b) - geminiRank(a));
 }
 
 async function errText(res: Response) {
