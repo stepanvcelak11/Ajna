@@ -18,6 +18,12 @@ export interface Level {
   name: string;
   desc: string;
   monologueSec: number;
+  /** hard limit for generated Czech prompts (words) */
+  maxWords: number;
+  /** how many fluency chunks a drill sentence uses */
+  chunks: 1 | 2;
+  /** few-shot examples of good Czech prompts at this level */
+  examplesCz: string[];
   /** guidance for the sentence generator */
   sentences: string;
   /** guidance for the sentence-expansion ladder */
@@ -34,7 +40,10 @@ export const LEVELS: Level[] = [
     name: 'Základy',
     desc: 'Krátké jednoduché věty, přítomný a minulý čas.',
     monologueSec: 30,
-    sentences: 'very short simple sentences (5-9 words), one clause, very common everyday words, present simple, present continuous, past simple, "going to".',
+    maxWords: 8,
+    chunks: 1,
+    examplesCz: ['Každé ráno piju kávu.', 'Včera jsem byl v kině.', 'Můj bratr bydlí v Brně.', 'Zítra jdu k doktorovi.'],
+    sentences: 'VERY short simple sentences (4-8 words), ONE clause only, only the most common everyday words a beginner knows (home, family, food, work, weather, time), present simple, present continuous, past simple or "going to". No idioms, no rare words, no subordinate clauses.',
     ladder:
       'step1: 3-5 word sentence in present simple or past simple. step2: add a simple reason/time with "because", "and", "when" or "after". step3: add "but" or "so". Final sentence max ~15 words.',
     strictness: 'Be gentle: only report errors that change meaning or are basic (articles, word order, verb forms). Accept simple but correct answers as passed.',
@@ -54,7 +63,10 @@ export const LEVELS: Level[] = [
     name: 'Mírně pokročilý',
     desc: 'Delší věty se spojkami, budoucnost, porovnávání.',
     monologueSec: 45,
-    sentences: 'short sentences (8-14 words), at most two clauses, everyday vocabulary, connectors and, but, because, so, when, if.',
+    maxWords: 12,
+    chunks: 1,
+    examplesCz: ['Upřímně řečeno, dnes nechci vařit.', 'Když prší, jezdím do práce autobusem.', 'Myslím, že ten film bude dobrý.'],
+    sentences: 'short sentences (6-12 words), at most two simple clauses joined by and/but/because/so/when/if, common everyday vocabulary only.',
     ladder:
       'step1: 4-6 word sentence. step2: add reason/time ("because", "when", "before", "after"). step3: add contrast or result ("but", "so", "although"). Final sentence ~15-20 words.',
     strictness: 'Report real grammar errors and the most obvious Czenglish; do not nitpick style.',
@@ -74,6 +86,9 @@ export const LEVELS: Level[] = [
     name: 'Střední',
     desc: 'Předpřítomný čas, vedlejší věty, modální slovesa.',
     monologueSec: 60,
+    maxWords: 18,
+    chunks: 2,
+    examplesCz: ['Upřímně řečeno, už tři roky se učím anglicky, ale pořád se bojím mluvit.', 'Ukázalo se, že obchod byl zavřený, tak jsme šli domů.'],
     sentences: 'natural sentences (12-20 words), two clauses, B1 vocabulary and common phrasal verbs.',
     ladder:
       'step1: 4-6 word sentence. step2: add reason/time/purpose. step3: add contrast or consequence ("although", "even though", "so", "which meant that"). Final multi-clause sentence ~20-25 words.',
@@ -95,6 +110,9 @@ export const LEVELS: Level[] = [
     name: 'Pokročilý',
     desc: 'Všechny časy, trpný rod, nepřímá řeč, 3. kondicionál.',
     monologueSec: 90,
+    maxWords: 25,
+    chunks: 2,
+    examplesCz: ['Kdybych to věděl dřív, nekupoval bych lístky tak brzy.', 'Ukázalo se, že projekt byl schválen, i když jsme odevzdali zprávu pozdě.'],
     sentences: 'longer sentences (16-28 words), multiple clauses, B2 vocabulary, collocations and linking words.',
     ladder:
       'step1: 5-7 word sentence in a less common tense. step2: add a time clause or reason using past perfect or a participle. step3: add contrast/consequence/condition ("despite", "whereas", "otherwise", "if ... had"). Final sentence ~25-30 words.',
@@ -116,6 +134,9 @@ export const LEVELS: Level[] = [
     name: 'Expert',
     desc: 'Smíšené kondicionály, inverze, idiomy, styl.',
     monologueSec: 120,
+    maxWords: 35,
+    chunks: 2,
+    examplesCz: ['Kdyby mi tehdy kolega nepomohl, asi bych tu práci dodnes nedělal, i když mě to vlastně baví.'],
     sentences: 'complex, natural sentences (20-35 words), advanced structures, idiomatic language and precise vocabulary.',
     ladder:
       'step1: 5-8 word sentence. step2: add an advanced subordinate clause (participle clause, "having done", "by the time"). step3: add a nuanced contrast or hypothetical ("had it not been for", "even if", "were it not"). Final sentence ~30-35 words.',

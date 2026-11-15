@@ -4,7 +4,7 @@ import { FeedbackCard } from '../components/FeedbackCard';
 import { MicRecorder } from '../components/MicRecorder';
 import { SpeakButton } from '../components/Speak';
 import { Btn, Card, ErrorBox, Label, ModeHeader, Spinner, cx } from '../components/ui';
-import { DRILL_CONTEXTS, FLUENCY_CHUNKS, type DrillContextId } from '../data/content';
+import { BASIC_CHUNKS, DRILL_CONTEXTS, FLUENCY_CHUNKS, type DrillContextId } from '../data/content';
 import { evaluate, generateDrill, type DrillItem } from '../lib/ai';
 import type { Evaluation } from '../lib/types';
 import { recordLevelResult } from '../lib/store';
@@ -16,19 +16,41 @@ import { Icon, IconTile } from '../components/icons';
 
 type Ctx = DrillContextId | 'lesson';
 
-function pickChunks(c: Ctx) {
+/** Chunks the AI may choose from: simple ones for levels 1–2, context-specific ones above. */
+function chunkPool(c: Ctx, level: number) {
+  const shuffle = <T,>(a: T[]) => [...a].sort(() => Math.random() - 0.5);
+  if (level <= 1) return shuffle(BASIC_CHUNKS);
   const ctx = c === 'lesson' ? 'general' : c;
-  const pool = [...FLUENCY_CHUNKS[ctx], ...(ctx === 'general' ? [] : FLUENCY_CHUNKS.general)];
-  const a = pool.splice(Math.floor(Math.random() * FLUENCY_CHUNKS[ctx].length), 1)[0];
-  const b = pool[Math.floor(Math.random() * pool.length)];
-  return [a, b];
+  const specific = ctx === 'general' ? [] : FLUENCY_CHUNKS[ctx];
+  if (level === 2) return shuffle([...BASIC_CHUNKS, ...specific]).slice(0, 14);
+  return shuffle([...specific, ...FLUENCY_CHUNKS.general]).slice(0, 14);
+}
+
+/** Highlight the Czech words that correspond to the required chunks. */
+function MarkedPrompt({ text, marks }: { text: string; marks: string[] }) {
+  const m = marks.map((x) => x.trim().replace(/[.,]$/, '')).filter((x) => x.length > 1);
+  if (!m.length) return <>{text}</>;
+  const esc = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.split(new RegExp(`(${m.map(esc).join('|')})`, 'i'));
+  return (
+    <>
+      {parts.map((p, i) =>
+        m.some((x) => x.toLowerCase() === p.toLowerCase()) ? (
+          <span key={i} className="rounded bg-amber-500/15 px-1 text-amber-700 dark:text-amber-300 underline decoration-amber-500/60 underline-offset-4">
+            {p}
+          </span>
+        ) : (
+          <span key={i}>{p}</span>
+        ),
+      )}
+    </>
+  );
 }
 
 export default function Drill() {
   const [ctx, setCtx] = useState<Ctx | null>(null);
-  const [chunks, setChunks] = useState<{ en: string; cz: string }[]>([]);
   const [item, setItem] = useState<DrillItem | null>(null);
-  const [itemPromise, setItemPromise] = useState<Promise<DrillItem> | null>(null);
+  const nextRef = useRef<{ key: string; p: Promise<DrillItem> } | null>(null);
   const [shown, setShown] = useState(false);
   const [evalRes, setEvalRes] = useState<Evaluation | null>(null);
   const [busy, setBusy] = useState(false);
@@ -43,25 +65,32 @@ export default function Drill() {
       ? { icon: l.icon, tone: l.tone, label: `Lekce ${l.n}: ${l.title}`, prompt: `textbook lesson ${l.n}: ${l.vocabTopic}`, cz: l.cz }
       : { ...(DRILL_CONTEXTS.find((d) => d.id === c) ?? DRILL_CONTEXTS[0]), prompt: '' };
 
+  const keyOf = (c: Ctx) => `${c}|${getState().settings.level}|${getState().settings.focus}`;
+  const makeItem = (c: Ctx) => {
+    const info = ctxOf(c);
+    const p = generateDrill(info.prompt || info.label, chunkPool(c, getState().settings.level), history.current);
+    p.catch(() => {});
+    return p;
+  };
+
   const start = (c: Ctx) => {
     setCtx(c);
-    const ch = pickChunks(c);
-    setChunks(ch);
     setItem(null);
     setShown(false);
     setEvalRes(null);
     setErr(null);
     setN((x) => x + 1);
-    const info = ctxOf(c);
-    const label = info.prompt || info.label;
-    // generate in the background while the learner reads the chunks
-    const p = generateDrill(label, ch.map((x) => x.en), history.current);
+    const key = keyOf(c);
+    const p = nextRef.current?.key === key ? nextRef.current.p : makeItem(c);
+    nextRef.current = null;
     p.then((it) => {
       setItem(it);
       history.current.push(it.prompt_cz);
+      // prepare the next sentence in the background
+      nextRef.current = { key, p: makeItem(c) };
     }).catch((e) => setErr(e.message));
-    setItemPromise(p);
   };
+  const chunks = item?.chunks ?? [];
 
   const submit = async (text: string) => {
     if (!item) return;
@@ -69,12 +98,12 @@ export default function Drill() {
     setErr(null);
     try {
       const r = await evaluate({
-          task: `Translate the Czech prompt into natural spoken English. The learner MUST use both fluency chunks: ${chunks
+          task: `Translate the Czech prompt into natural spoken English. The learner MUST use ${chunks.length > 1 ? 'these fluency chunks' : 'this fluency chunk'}: ${chunks
             .map((c) => `"${c.en}"`)
-            .join(' and ')}. Also check that the chunks are used naturally (and mention it in explanation_cz if not).`,
+            .join(' and ')} (for the Czech words ${chunks.map((c) => `"${c.cz}"`).join(', ')}). Also check that the chunks are used naturally (and mention it in explanation_cz if not).`,
           prompt_cz: item.prompt_cz,
           answer: text,
-          passRule: 'true only if BOTH fluency chunks are used (small variations OK) AND the translation is accurate and grammatical.',
+          passRule: 'true only if the required fluency chunk(s) are used (small variations OK) AND the translation is accurate and grammatical.',
         });
       setEvalRes(r);
       recordLevelResult(r.passed);
@@ -121,7 +150,7 @@ export default function Drill() {
     <div>
       <ModeHeader
         title="Aktivní překlad"
-        subtitle={`${ctxInfo.label} · věta ${n}`}
+        subtitle={`${ctxInfo.cz} · věta ${n}`}
         right={
           <Btn variant="ghost" className="h-9 px-2.5 text-xs" onClick={() => setCtx(null)}>
             Změnit téma
@@ -131,7 +160,8 @@ export default function Drill() {
       />
       <div className="space-y-4">
         <Card>
-          <Label>Povinné fráze – použij obě</Label>
+          <Label>{chunks.length > 1 ? 'Povinné fráze – použij obě' : 'Povinná fráze – použij ji'}</Label>
+          {!item && !err && <Spinner label="Připravuji větu…" />}
           <div className="mt-3 space-y-2">
             {chunks.map((c) => (
               <div key={c.en} className="flex items-center justify-between gap-2 rounded-xl bg-accent/8 border border-accent/25 px-3 py-2">
@@ -144,20 +174,21 @@ export default function Drill() {
             ))}
           </div>
           {!shown && (
-            <Btn variant="primary" className="w-full mt-4" onClick={() => setShown(true)} disabled={!itemPromise}>
-              <Eye className="size-4" /> Mám je – ukaž větu
+            <Btn variant="primary" className="w-full mt-4" onClick={() => setShown(true)} disabled={!item}>
+              <Eye className="size-4" /> {chunks.length > 1 ? 'Mám je' : 'Mám ji'} – ukaž větu
             </Btn>
           )}
         </Card>
 
+        {err && <ErrorBox error={err} onRetry={() => start(ctx)} />}
         {shown && (
           <>
-            {err && <ErrorBox error={err} onRetry={() => start(ctx)} />}
-            {!item && !err && <Spinner label="Generuji větu…" />}
             {item && (
               <Card className={cx('animate-up')}>
                 <Label>Přelož a řekni nahlas</Label>
-                <div className="mt-2 text-xl font-medium leading-snug">{item.prompt_cz}</div>
+                <div className="mt-2 text-xl font-medium leading-snug">
+                  <MarkedPrompt text={item.prompt_cz} marks={chunks.map((c) => c.cz)} />
+                </div>
                 {item.note_cz && (
                   <div className="mt-2 flex items-center gap-1.5 text-xs text-muted">
                     <Icon name="bulb" className="size-3.5" /> {item.note_cz}

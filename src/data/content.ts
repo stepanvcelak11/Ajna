@@ -54,6 +54,22 @@ export const FLUENCY_CHUNKS: Record<DrillContextId | 'general', { en: string; cz
   ],
 };
 
+/** Simpler chunks for levels 1–2. */
+export const BASIC_CHUNKS: { en: string; cz: string }[] = [
+  { en: 'I think (that)', cz: 'Myslím, že' },
+  { en: 'To be honest,', cz: 'Upřímně řečeno,' },
+  { en: 'Actually,', cz: 'Vlastně' },
+  { en: 'Usually,', cz: 'Obvykle' },
+  { en: "I'm not sure (if)", cz: 'Nejsem si jistý, jestli' },
+  { en: 'Maybe', cz: 'Možná' },
+  { en: "That's why", cz: 'Proto' },
+  { en: 'In the end,', cz: 'Nakonec' },
+  { en: 'The problem is (that)', cz: 'Problém je, že' },
+  { en: 'By the way,', cz: 'Mimochodem' },
+  { en: "I'd like to", cz: 'Chtěl bych' },
+  { en: "I don't mind", cz: 'Nevadí mi' },
+];
+
 export const LADDER_THEMES = [
   'daily routine and transport',
   'work and colleagues',

@@ -71,6 +71,8 @@ Keep it short. Never invent errors: if the sentence is fine, say so and return a
 Write explanation_cz in Czech: max 3 short bullet points explaining WHY the native version sounds better.
 tip_cz must be Czech, max ~12 words.`;
 
+const NATURAL_CZ = `Czech quality rules: the sentence must be something a real Czech person would naturally say in that situation; every part must logically fit together; concrete and everyday (no abstract, philosophical or strange content); correct Czech grammar, spelling and diacritics. Re-read it before answering and simplify or fix anything that sounds odd.`;
+
 const EVAL_FIELDS = `Field rules:
 - user_transcript: the learner's answer, cleaned of fillers only.
 - grammatical_fix: MINIMAL edit of the learner's own sentence to make it grammatical (keep their words). If already fine, repeat it.
@@ -124,7 +126,10 @@ export function generateLadder(theme: string): Promise<Ladder> {
     system: `You create "sentence expansion ladder" exercises for ${lvl().who}. Output Czech prompts.`,
     user: `Theme: ${theme}.
 DIFFICULTY: ${lvl().level.ladder}
+The step-1 sentence must have at most ${Math.max(4, Math.round(lvl().level.maxWords * 0.7))} Czech words.
 ${lvl().focus}
+${NATURAL_CZ}
+All three steps must describe ONE coherent, realistic situation.
 Create:
 - step1_cz: a short Czech core sentence about everyday life, e.g. "Včera jsem zmeškal vlak."
 - step2_instruction_cz: Czech instruction that extends the SAME situation with a reason/time/purpose, format: "Rozšiř to o důvod: protože jsem zaspal."
@@ -139,22 +144,38 @@ Vary tenses and connectors appropriate to the level. Pick a fresh, concrete situ
 // ---------- Mode B: Drill ----------
 export interface DrillItem {
   prompt_cz: string;
+  /** chosen fluency chunks; cz = the exact Czech words used for it in prompt_cz */
+  chunks: { en: string; cz: string }[];
   note_cz: string;
 }
 
-export function generateDrill(context: string, chunks: string[], avoid: string[]): Promise<DrillItem> {
-  return callJson<DrillItem>({
-    system: `You create Czech-to-English speaking drills for ${lvl().who}.`,
-    user: `Context: ${context}.
-Write ONE natural Czech sentence (or two short ones) that the learner will translate into spoken English.
-LENGTH AND COMPLEXITY: ${lvl().level.sentences}
-${lvl().focus}
-Its meaning must make it natural to start/connect with BOTH of these English fluency chunks: ${chunks.map((c) => `"${c}"`).join(', ')}.
-Do NOT include the English chunks. Use realistic, specific everyday content.
-note_cz: a very short Czech hint about where the chunks fit (max 10 words), without giving away the translation.
-Avoid repeating these earlier prompts: ${avoid.slice(-5).join(' | ') || 'none'}`,
-    schema: obj({ prompt_cz: str, note_cz: str }),
-  });
+const czWords = (t: string) => t.trim().split(/\s+/).filter(Boolean).length;
+
+export async function generateDrill(context: string, pool: { en: string; cz: string }[], avoid: string[]): Promise<DrillItem> {
+  const { level, focus, who } = lvl();
+  const ask = (tooLong?: string) =>
+    callJson<DrillItem>({
+      system: `You create Czech-to-English speaking drills for ${who}.`,
+      user: `Context / situation: ${context}.
+Step 1 – write ONE Czech sentence the learner will translate into spoken English.
+LENGTH AND COMPLEXITY: ${level.sentences}
+HARD LIMIT: at most ${level.maxWords} Czech words.
+Good examples at this level: ${level.examplesCz.map((e) => `"${e}"`).join(' ')}
+${focus}
+${NATURAL_CZ}
+Step 2 – from this list of English fluency chunks choose exactly ${level.chunks} that fit the MEANING of your sentence most naturally (never force a chunk that does not fit; if needed, adjust the sentence so it fits naturally):
+${pool.map((c) => `"${c.en}" (= ${c.cz})`).join(', ')}
+The Czech sentence MUST contain the Czech equivalent of each chosen chunk at its natural place, so that a natural translation uses the English chunk.
+Return chunks as [{en: exactly as in the list, cz: the exact Czech words for it as they appear in prompt_cz}].
+note_cz: a very short Czech hint (max 8 words), without giving away the translation.
+Do not repeat these earlier prompts: ${avoid.slice(-5).join(' | ') || 'none'}${tooLong ? `\nYOUR PREVIOUS ATTEMPT WAS TOO LONG OR TOO COMPLEX: "${tooLong}". Make it shorter and simpler.` : ''}`,
+      schema: obj({ prompt_cz: str, chunks: arr(obj({ en: str, cz: str })), note_cz: str }),
+    });
+  let item = await ask();
+  // Enforce the level's length limit (models sometimes ignore it): one retry with feedback.
+  if (czWords(item.prompt_cz) > level.maxWords + 2) item = await ask(item.prompt_cz);
+  const chunks = (Array.isArray(item.chunks) ? item.chunks : []).filter((c) => c?.en).slice(0, level.chunks);
+  return { ...item, chunks: chunks.length ? chunks : pool.slice(0, level.chunks) };
 }
 
 // ---------- Mode C: Monologue ----------
@@ -302,7 +323,7 @@ export function generatePatternDrill(pattern: string, originalWrong: string, ori
     system: `You create targeted Czech-to-English drills that re-test one grammar structure or Czenglish trap.`,
     user: `The learner previously failed this pattern: "${pattern}".
 Their wrong sentence: "${originalWrong}". Correct: "${originalFix}".
-Write ONE NEW Czech sentence (complexity: ${lvl().level.sentences}) whose natural English translation REQUIRES exactly the same structure/trap,
+Write ONE NEW Czech sentence (complexity: ${lvl().level.sentences}; at most ${lvl().level.maxWords + 4} words) whose natural English translation REQUIRES exactly the same structure/trap,\n${NATURAL_CZ}\n
 but with completely different vocabulary and situation. target_structure: short English description of what must be used.`,
     schema: obj({ prompt_cz: str, target_structure: str }),
   });
