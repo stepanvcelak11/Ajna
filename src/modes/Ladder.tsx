@@ -1,5 +1,5 @@
 import { ChevronRight, RefreshCw } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FeedbackCard } from '../components/FeedbackCard';
 import { MicRecorder } from '../components/MicRecorder';
 import { SpeakButton } from '../components/Speak';
@@ -19,6 +19,9 @@ export default function Ladder() {
   const [err, setErr] = useState<string | null>(null);
   const [round, setRound] = useState(0);
 
+  const nextRef = useRef<Promise<LadderT> | null>(null);
+  const newLadder = () => generateLadder(LADDER_THEMES[Math.floor(Math.random() * LADDER_THEMES.length)]);
+
   const load = async () => {
     setLadder(null);
     setErr(null);
@@ -27,9 +30,15 @@ export default function Ladder() {
     setRevealed(false);
     setStepEval(null);
     setFinal(null);
+    const pending = nextRef.current ?? newLadder();
+    nextRef.current = null;
     try {
-      setLadder(await generateLadder(LADDER_THEMES[Math.floor(Math.random() * LADDER_THEMES.length)]));
+      setLadder(await pending);
       setRound((r) => r + 1);
+      // prepare the next ladder while the learner works on this one
+      const next = newLadder();
+      next.catch(() => {});
+      nextRef.current = next;
     } catch (e) {
       setErr((e as Error).message);
     }

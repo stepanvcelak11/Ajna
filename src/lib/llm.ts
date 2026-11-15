@@ -113,10 +113,16 @@ const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 
 export const GEMINI_DEFAULT = 'gemini-flash-latest';
 
+// Thinking makes Gemini much slower. Try the lowest level first and remember what each model accepts.
+const THINKING_OPTIONS: (Record<string, unknown> | null)[] = [{ thinkingLevel: 'minimal' }, { thinkingLevel: 'low' }, { thinkingBudget: 0 }, null];
+const thinkingIdx = new Map<string, number>();
+
 async function callGemini(opts: CallOpts, retried = false): Promise<unknown> {
   const { system, user, schema, maxTokens = 2500, signal } = opts;
   const s = getState().settings;
   const model = (s.geminiModel || GEMINI_DEFAULT).replace(/^models\//, '');
+  const ti = thinkingIdx.get(model) ?? 0;
+  const thinkingConfig = THINKING_OPTIONS[ti];
   const res = await fetch(`${GEMINI_BASE}/models/${encodeURIComponent(model)}:generateContent`, {
     method: 'POST',
     signal,
@@ -126,11 +132,19 @@ async function callGemini(opts: CallOpts, retried = false): Promise<unknown> {
         parts: [{ text: `${system}\n\nRespond ONLY with a JSON object matching this JSON Schema:\n${JSON.stringify(schema)}` }],
       },
       contents: [{ role: 'user', parts: [{ text: user }] }],
-      generationConfig: { responseMimeType: 'application/json', maxOutputTokens: Math.max(maxTokens, 4000) },
+      generationConfig: {
+        responseMimeType: 'application/json',
+        maxOutputTokens: Math.max(maxTokens, 4000),
+        ...(thinkingConfig ? { thinkingConfig } : {}),
+      },
     }),
   });
   if (!res.ok) {
     const msg = await errText(res);
+    if (res.status === 400 && /thinking/i.test(msg) && ti < THINKING_OPTIONS.length - 1) {
+      thinkingIdx.set(model, ti + 1);
+      return callGemini(opts, retried);
+    }
     // Retired / unavailable model: switch to the model Google suggests (or the "latest" alias) and retry once.
     if (!retried && (res.status === 404 || res.status === 400) && /no longer available|not found|not supported|deprecated/i.test(msg)) {
       const suggested = msg.match(/use (?:models\/)?(gemini-[\w.-]*\w)/i)?.[1];
@@ -192,16 +206,26 @@ async function errText(res: Response) {
 
 export const OFFLINE_MSG = 'Jsi offline. AI hodnocení potřebuje internet – slovíčka a Banku chyb můžeš procházet i bez něj.';
 
+const TIMEOUT_MS = 45000;
+
 export async function callJson<T>(opts: CallOpts): Promise<T> {
   if (!hasKey()) throw new LlmError('Chybí API klíč. Přidej ho v Nastavení.');
   if (!navigator.onLine) throw new LlmError(OFFLINE_MSG);
   const s = getState().settings;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+  const o = { ...opts, signal: ctrl.signal };
   try {
-    const out =
-      s.provider === 'openai' ? await callOpenAI(opts) : s.provider === 'gemini' ? await callGemini(opts) : await callAnthropic(opts);
+    const out = s.provider === 'openai' ? await callOpenAI(o) : s.provider === 'gemini' ? await callGemini(o) : await callAnthropic(o);
     return out as T;
   } catch (e) {
+    if ((e as Error)?.name === 'AbortError')
+      throw new LlmError(
+        `AI neodpověděla do ${TIMEOUT_MS / 1000} s. Zkus to znovu${s.provider === 'gemini' ? ' nebo v Nastavení vyber rychlejší model (gemini-flash-lite-latest)' : ''}.`,
+      );
     if (e instanceof TypeError) throw new LlmError(navigator.onLine ? 'Nepodařilo se spojit s AI. Zkontroluj připojení.' : OFFLINE_MSG);
     throw e;
+  } finally {
+    clearTimeout(timer);
   }
 }

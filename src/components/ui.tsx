@@ -1,5 +1,5 @@
 import { ArrowLeft, Loader2, X } from 'lucide-react';
-import { useEffect, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { useEffect, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { navigate } from '../lib/router';
 
 export function cx(...c: (string | false | null | undefined)[]) {
@@ -53,9 +53,20 @@ export function Label({ children, className }: { children: ReactNode; className?
 }
 
 export function Spinner({ label }: { label?: string }) {
+  const [sec, setSec] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setSec((x) => x + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
   return (
-    <div className="flex items-center gap-2 text-sm text-muted py-6 justify-center">
-      <Loader2 className="size-4 animate-spin" /> {label ?? 'Přemýšlím…'}
+    <div className="py-6 text-center">
+      <div className="flex items-center gap-2 text-sm text-muted justify-center">
+        <Loader2 className="size-4 animate-spin" /> {label ?? 'Přemýšlím…'}
+        {sec >= 3 && <span className="tabular-nums text-xs opacity-70">{sec} s</span>}
+      </div>
+      {sec >= 15 && (
+        <div className="mt-2 text-[11px] text-muted">Trvá to dlouho? V Nastavení zkus rychlejší model (např. gemini-flash-lite-latest).</div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { ChevronRight, RotateCcw } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { FeedbackCard } from '../components/FeedbackCard';
 import { MicRecorder } from '../components/MicRecorder';
 import { Btn, Card, ErrorBox, Label, ModeHeader, Spinner, cx } from '../components/ui';
@@ -40,16 +40,35 @@ export default function MistakePractice() {
   const [score, setScore] = useState({ ok: 0, mastered: 0 });
   const m = queue[i];
 
-  const load = () => {
+  const prefetch = useRef(new Map<string, Promise<PatternDrill>>());
+  const getDrill = (x: Mistake, fresh = false) => {
+    let p = fresh ? undefined : prefetch.current.get(x.id);
+    if (!p) {
+      p = generatePatternDrill(x.pattern, x.user_text, x.fix);
+      p.catch(() => {});
+    }
+    prefetch.current.delete(x.id);
+    return p;
+  };
+  const load = (fresh = false) => {
     if (!m) return;
     setDrill(null);
     setEv(null);
     setErr(null);
-    generatePatternDrill(m.pattern, m.user_text, m.fix)
-      .then(setDrill)
+    getDrill(m, fresh)
+      .then((d) => {
+        setDrill(d);
+        // prepare the next one in the background
+        const n = queue[i + 1];
+        if (n && !prefetch.current.has(n.id)) {
+          const p = generatePatternDrill(n.pattern, n.user_text, n.fix);
+          p.catch(() => {});
+          prefetch.current.set(n.id, p);
+        }
+      })
       .catch((e) => setErr(e.message));
   };
-  useEffect(load, [i]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => load(), [i]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const submit = async (text: string) => {
     if (!drill || !m) return;
@@ -109,7 +128,7 @@ export default function MistakePractice() {
           </div>
         </Card>
 
-        {err && <ErrorBox error={err} onRetry={drill ? undefined : load} />}
+        {err && <ErrorBox error={err} onRetry={drill ? undefined : () => load(true)} />}
         {!drill && !err && <Spinner label="Připravuji novou větu se stejnou pastí…" />}
         {drill && (
           <Card>
@@ -123,7 +142,7 @@ export default function MistakePractice() {
             <FeedbackCard evaluation={ev} mode="mistake-practice" promptCz={drill?.prompt_cz} showVerdict="passed" noAutoSave />
             <div className="flex gap-2">
               {!ev.passed && (
-                <Btn className="flex-1" onClick={load}>
+                <Btn className="flex-1" onClick={() => load(true)}>
                   <RotateCcw className="size-4" /> Jiná věta
                 </Btn>
               )}
