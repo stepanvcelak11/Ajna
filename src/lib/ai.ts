@@ -1,5 +1,20 @@
 import { callJson, type JsonSchema } from './llm';
 import type { CzenglishWarning, Evaluation } from './types';
+import { findTopic, getLevel } from '../data/levels';
+import { getState } from './store';
+
+/** Current difficulty level + optional grammar focus, for prompts. */
+function lvl() {
+  const s = getState().settings;
+  const level = getLevel(s.level);
+  const topic = findTopic(s.focus);
+  const who = `a Czech learner of English at level ${level.cefr} ("${level.name}")`;
+  const focus = topic
+    ? `GRAMMAR FOCUS: the English translation MUST require ${topic.en}. Build the Czech sentence so this structure is the natural way to translate it.`
+    : `Grammar: pick naturally from the structures typical for this level: ${level.grammar.map((g) => g.en).join('; ')}.`;
+  const vocab = topic?.vocab ? `\nVOCABULARY: use words and situations from the topic "${topic.vocab}" (the learner's current textbook lesson).` : '';
+  return { level, topic, who, focus: focus + vocab };
+}
 
 // ---------- schema helpers (kept simple so both providers' structured modes accept them) ----------
 const str = { type: 'string' };
@@ -76,7 +91,7 @@ ${params.prompt_cz ? `CZECH PROMPT: ${params.prompt_cz}\n` : ''}LEARNER SAID: ""
 
 passed: ${params.passRule ?? 'true if is_correct is true and the answer conveys the full meaning of the prompt.'}`;
   return callJson<Evaluation>({
-    system: `${COACH}\n\n${EVAL_FIELDS}`,
+    system: `${COACH}\n\n${EVAL_FIELDS}\n\nLEARNER LEVEL: ${lvl().level.cefr}. ${lvl().level.strictness}`,
     user,
     schema: evaluationSchema,
   }).then(sanitizeEval);
@@ -106,15 +121,17 @@ export interface Ladder {
 
 export function generateLadder(theme: string): Promise<Ladder> {
   return callJson<Ladder>({
-    system: `You create "sentence expansion ladder" exercises for a Czech B1 learner of English. Output Czech prompts.`,
+    system: `You create "sentence expansion ladder" exercises for ${lvl().who}. Output Czech prompts.`,
     user: `Theme: ${theme}.
+DIFFICULTY: ${lvl().level.ladder}
+${lvl().focus}
 Create:
-- step1_cz: a simple 4-6 word Czech core sentence about everyday life (past, present or future), e.g. "Včera jsem zmeškal vlak."
+- step1_cz: a short Czech core sentence about everyday life, e.g. "Včera jsem zmeškal vlak."
 - step2_instruction_cz: Czech instruction that extends the SAME situation with a reason/time/purpose, format: "Rozšiř to o důvod: protože jsem zaspal."
 - step3_instruction_cz: Czech instruction adding a contrast or consequence, format: "Přidej kontrast: i když jsem si nastavil dva budíky." or "Přidej důsledek: takže jsem přišel pozdě na poradu."
-- reference_en: 3 natural English sentences: the step-1 sentence, the combined step-2 sentence, the final multi-clause B1/B2 sentence.
+- reference_en: 3 natural English sentences at this level: the step-1 sentence, the combined step-2 sentence, the final full sentence.
 - topic: 2-4 word English label.
-Vary tenses and connectors (because, so that, although, even though, which meant that, by the time...). Pick a fresh, concrete situation.`,
+Vary tenses and connectors appropriate to the level. Pick a fresh, concrete situation.`,
     schema: obj({ topic: str, step1_cz: str, step2_instruction_cz: str, step3_instruction_cz: str, reference_en: arr(str) }),
   });
 }
@@ -127,9 +144,11 @@ export interface DrillItem {
 
 export function generateDrill(context: string, chunks: string[], avoid: string[]): Promise<DrillItem> {
   return callJson<DrillItem>({
-    system: `You create Czech-to-English speaking drills for a Czech B1 learner.`,
+    system: `You create Czech-to-English speaking drills for ${lvl().who}.`,
     user: `Context: ${context}.
-Write ONE natural Czech sentence or two short sentences (12-25 words) that the learner will translate into spoken English.
+Write ONE natural Czech sentence (or two short ones) that the learner will translate into spoken English.
+LENGTH AND COMPLEXITY: ${lvl().level.sentences}
+${lvl().focus}
 Its meaning must make it natural to start/connect with BOTH of these English fluency chunks: ${chunks.map((c) => `"${c}"`).join(', ')}.
 Do NOT include the English chunks. Use realistic, specific everyday content.
 note_cz: a very short Czech hint about where the chunks fit (max 10 words), without giving away the translation.
@@ -155,7 +174,7 @@ export function reformulate(prompt: string, transcript: string): Promise<Reformu
 TRANSCRIPT: """${transcript}"""
 Return:
 - corrected: the learner's exact words, LIGHTLY corrected (grammar only, keep their vocabulary and sentence order).
-- native_b2: a "Native B2 Reformulation": same ideas and story, but phrased the way a fluent speaker would naturally say it out loud (spoken register, contractions, good connectors). Similar length. Suitable for shadowing.
+- native_b2: a "Native Reformulation": same ideas and story, phrased the way a fluent speaker would naturally say it out loud (spoken register, contractions, good connectors), pitched ONE step above the learner's level (${lvl().level.cefr}) so it stays learnable. Similar length. Suitable for shadowing.
 - czenglish_warnings: the most important interference errors (max 5).
 - explanation_cz: max 3 short Czech bullets.
 - key_phrases: 3-5 useful phrases from native_b2 with Czech translation.
@@ -192,7 +211,7 @@ export function roleplayTurn(params: {
     system: `${COACH}
 
 You are ALSO playing a character in a short spoken roleplay. Stay in character in "reply": natural spoken English,
-1-2 short sentences (max ~30 words), friendly, B1-friendly vocabulary, end with something the learner can respond to.
+1-2 short sentences (max ~30 words), friendly, vocabulary suited to ${lvl().who}, end with something the learner can respond to.
 Never correct the learner inside "reply". Corrections go ONLY to coach_tip.`,
     user: `SCENARIO: ${params.scenario}
 YOU PLAY: ${params.aiRole}. LEARNER PLAYS: ${params.userRole}. LEARNER'S GOAL: ${params.goal}.
@@ -283,7 +302,7 @@ export function generatePatternDrill(pattern: string, originalWrong: string, ori
     system: `You create targeted Czech-to-English drills that re-test one grammar structure or Czenglish trap.`,
     user: `The learner previously failed this pattern: "${pattern}".
 Their wrong sentence: "${originalWrong}". Correct: "${originalFix}".
-Write ONE NEW Czech sentence (8-18 words) whose natural English translation REQUIRES exactly the same structure/trap,
+Write ONE NEW Czech sentence (complexity: ${lvl().level.sentences}) whose natural English translation REQUIRES exactly the same structure/trap,
 but with completely different vocabulary and situation. target_structure: short English description of what must be used.`,
     schema: obj({ prompt_cz: str, target_structure: str }),
   });

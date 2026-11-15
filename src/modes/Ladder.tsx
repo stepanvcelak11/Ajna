@@ -7,6 +7,10 @@ import { Btn, Card, ErrorBox, Label, ModeHeader, Spinner, cx } from '../componen
 import { evaluate, generateLadder, type Ladder as LadderT } from '../lib/ai';
 import type { Evaluation } from '../lib/types';
 import { LADDER_THEMES } from '../data/content';
+import { recordLevelResult } from '../lib/store';
+import { LevelChip } from '../components/LevelPicker';
+import { getState } from '../lib/store';
+import { lessonOfTopic } from '../data/textbook';
 
 export default function Ladder() {
   const [ladder, setLadder] = useState<LadderT | null>(null);
@@ -20,7 +24,17 @@ export default function Ladder() {
   const [round, setRound] = useState(0);
 
   const nextRef = useRef<Promise<LadderT> | null>(null);
-  const newLadder = () => generateLadder(LADDER_THEMES[Math.floor(Math.random() * LADDER_THEMES.length)]);
+  // level changed in the picker → start a new ladder at the new level once the sheet closes
+  const [pendingReload, setPendingReload] = useState(false);
+  useEffect(() => {
+    if (!pendingReload) return;
+    setPendingReload(false);
+    load();
+  }, [pendingReload]); // eslint-disable-line react-hooks/exhaustive-deps
+  const newLadder = () => {
+    const lesson = lessonOfTopic(getState().settings.focus);
+    return generateLadder(lesson ? lesson.vocabTopic : LADDER_THEMES[Math.floor(Math.random() * LADDER_THEMES.length)]);
+  };
 
   const load = async () => {
     setLadder(null);
@@ -71,6 +85,7 @@ In native_version, show how a native speaker connects the clauses smoothly. Refe
         passRule: 'true if all three parts (core, extension, contrast/consequence) are present and grammatical.',
       });
       setFinal(e);
+      recordLevelResult(e.passed);
     } catch (e) {
       setErr((e as Error).message);
     } finally {
@@ -108,9 +123,17 @@ In native_version, show how a native speaker connects the clauses smoothly. Refe
         title="Nabalování vět"
         subtitle="Sentence Expansion Ladder"
         right={
-          <Btn variant="ghost" className="h-10 px-3" onClick={load} aria-label="Nová věta">
-            <RefreshCw className="size-4" />
-          </Btn>
+          <div className="flex items-center gap-1">
+            <LevelChip
+              onChange={() => {
+                nextRef.current = null;
+                setPendingReload(true);
+              }}
+            />
+            <Btn variant="ghost" className="h-10 px-3" onClick={load} aria-label="Nová věta">
+              <RefreshCw className="size-4" />
+            </Btn>
+          </div>
         }
       />
       {err && <ErrorBox error={err} onRetry={ladder ? undefined : load} />}

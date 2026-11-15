@@ -11,8 +11,11 @@ import { speak } from '../lib/speech';
 import { addVocab, hasVocab, isMistakeSaved, saveMistake, useStore } from '../lib/store';
 import type { Evaluation } from '../lib/types';
 import { toast, useAction } from '../lib/ui';
+import { getState } from '../lib/store';
+import { getLevel } from '../data/levels';
+import { LevelChip } from '../components/LevelPicker';
+import { lessonOfTopic } from '../data/textbook';
 
-const LIMIT = 60;
 
 function words(s: string) {
   return s.toLowerCase().replace(/[^a-z'\s]/g, ' ').split(/\s+/).filter(Boolean);
@@ -29,7 +32,11 @@ function similarity(ref: string, said: string) {
 }
 
 export default function Monologue() {
-  const [idx, setIdx] = useState(() => Math.floor(Math.random() * MONOLOGUE_PROMPTS.length));
+  const focus = useStore((s) => s.settings.focus);
+  const lesson = lessonOfTopic(focus);
+  const PROMPTS = lesson ? [...lesson.speaking, ...MONOLOGUE_PROMPTS] : MONOLOGUE_PROMPTS;
+  const LIMIT = getLevel(useStore((s) => s.settings.level)).monologueSec;
+  const [idx, setIdx] = useState(() => (lessonOfTopic(getState().settings.focus) ? 0 : Math.floor(Math.random() * MONOLOGUE_PROMPTS.length)));
   const [left, setLeft] = useState(LIMIT);
   const [running, setRunning] = useState(false);
   const [stopSig, setStopSig] = useState<number | undefined>(undefined);
@@ -41,7 +48,7 @@ export default function Monologue() {
   const [shadowMode, setShadowMode] = useState(false);
   const autoSave = useStore((s) => s.settings.autoSaveMistakes);
   useStore((s) => s.vocab.length + s.mistakes.length);
-  const prompt = MONOLOGUE_PROMPTS[idx];
+  const prompt = PROMPTS[idx % PROMPTS.length];
 
   useEffect(() => {
     if (!running) return;
@@ -85,7 +92,8 @@ export default function Monologue() {
   useAction('save', asEval ? () => saveMistake(asEval, 'monologue', prompt.cz) && toast('Uloženo do Banky chyb') : null);
 
   const newPrompt = () => {
-    setIdx((i) => (i + 1 + Math.floor(Math.random() * (MONOLOGUE_PROMPTS.length - 1))) % MONOLOGUE_PROMPTS.length);
+    // within a lesson go through its prompts in order, otherwise pick a random one
+    setIdx((i) => (lesson && i + 1 < lesson.speaking.length ? i + 1 : (i + 1 + Math.floor(Math.random() * (PROMPTS.length - 1))) % PROMPTS.length));
     setLeft(LIMIT);
     setRunning(false);
     setRes(null);
@@ -115,12 +123,15 @@ export default function Monologue() {
   return (
     <div>
       <ModeHeader
-        title="60s monolog"
+        title={`${LIMIT}s monolog`}
         subtitle="Mluv volně – chyby nevadí"
         right={
+          <div className="flex items-center gap-1">
+          <LevelChip onChange={() => setTimeout(() => setLeft(getLevel(getState().settings.level).monologueSec), 0)} />
           <Btn variant="ghost" className="h-10 px-3" onClick={newPrompt} aria-label="Jiné téma">
             <RefreshCw className="size-4" />
           </Btn>
+          </div>
         }
       />
       <div className="space-y-4">

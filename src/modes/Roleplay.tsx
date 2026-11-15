@@ -10,6 +10,9 @@ import { speak } from '../lib/speech';
 import { getState, isMistakeSaved, saveMistake } from '../lib/store';
 import type { Evaluation, TrapCategory } from '../lib/types';
 import { toast, useAction } from '../lib/ui';
+import { LevelChip } from '../components/LevelPicker';
+import { useStore } from '../lib/store';
+import { lessonOfTopic } from '../data/textbook';
 
 interface Msg {
   who: 'ai' | 'user';
@@ -58,6 +61,10 @@ function CoachTip({ tip }: { tip: NonNullable<Msg['tip']> }) {
 }
 
 export default function Roleplay() {
+  const lesson = lessonOfTopic(useStore((s) => s.settings.focus));
+  const lessonScenario: Scenario[] = lesson
+    ? [{ id: `lesson-${lesson.n}`, emoji: '📘', turns: 5, ...lesson.roleplay, title: `L${lesson.n}: ${lesson.roleplay.title}` }]
+    : [];
   const [sc, setSc] = useState<Scenario | null>(null);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [busy, setBusy] = useState(false);
@@ -116,9 +123,9 @@ export default function Roleplay() {
   if (!sc)
     return (
       <div>
-        <ModeHeader title="Hraní rolí" subtitle="Situational Voice Roleplay" />
+        <ModeHeader title="Hraní rolí" subtitle="Situational Voice Roleplay" right={<LevelChip />} />
         <div className="space-y-2.5">
-          {SCENARIOS.map((s) => (
+          {[...lessonScenario, ...SCENARIOS].map((s) => (
             <Card key={s.id} onClick={() => begin(s)} className="flex items-center gap-3 hover:border-accent/50">
               <div className="text-2xl">{s.emoji}</div>
               <div className="flex-1 min-w-0">

@@ -8,6 +8,8 @@ import { navigate } from '../lib/router';
 import { isDue } from '../lib/srs';
 import { getState, setState } from '../lib/store';
 import type { Evaluation, Mistake } from '../lib/types';
+import { recordLevelResult } from '../lib/store';
+import { LevelChip } from '../components/LevelPicker';
 
 const DAY = 86400000;
 
@@ -83,6 +85,7 @@ export default function MistakePractice() {
       });
       setEv(r);
       applyResult(m.id, r.passed);
+      recordLevelResult(r.passed);
       if (r.passed) setScore((s) => ({ ok: s.ok + 1, mastered: s.mastered + (m.successCount + 1 >= 2 ? 1 : 0) }));
     } catch (e) {
       setErr((e as Error).message);
@@ -112,7 +115,7 @@ export default function MistakePractice() {
 
   return (
     <div>
-      <ModeHeader title="Procvičit chyby" subtitle={`${i + 1} / ${queue.length}`} />
+      <ModeHeader title="Procvičit chyby" subtitle={`${i + 1} / ${queue.length}`} right={<LevelChip />} />
       <div className="space-y-4">
         <Card className="py-3">
           <Label>Trénuješ vzorec</Label>

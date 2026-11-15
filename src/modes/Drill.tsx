@@ -7,16 +7,23 @@ import { Btn, Card, ErrorBox, Label, ModeHeader, Spinner, cx } from '../componen
 import { DRILL_CONTEXTS, FLUENCY_CHUNKS, type DrillContextId } from '../data/content';
 import { evaluate, generateDrill, type DrillItem } from '../lib/ai';
 import type { Evaluation } from '../lib/types';
+import { recordLevelResult } from '../lib/store';
+import { LevelChip } from '../components/LevelPicker';
+import { useStore } from '../lib/store';
+import { lessonOfTopic } from '../data/textbook';
 
-function pickChunks(ctx: DrillContextId) {
-  const pool = [...FLUENCY_CHUNKS[ctx], ...FLUENCY_CHUNKS.general];
+type Ctx = DrillContextId | 'lesson';
+
+function pickChunks(c: Ctx) {
+  const ctx = c === 'lesson' ? 'general' : c;
+  const pool = [...FLUENCY_CHUNKS[ctx], ...(ctx === 'general' ? [] : FLUENCY_CHUNKS.general)];
   const a = pool.splice(Math.floor(Math.random() * FLUENCY_CHUNKS[ctx].length), 1)[0];
   const b = pool[Math.floor(Math.random() * pool.length)];
   return [a, b];
 }
 
 export default function Drill() {
-  const [ctx, setCtx] = useState<DrillContextId | null>(null);
+  const [ctx, setCtx] = useState<Ctx | null>(null);
   const [chunks, setChunks] = useState<{ en: string; cz: string }[]>([]);
   const [item, setItem] = useState<DrillItem | null>(null);
   const [itemPromise, setItemPromise] = useState<Promise<DrillItem> | null>(null);
@@ -27,7 +34,14 @@ export default function Drill() {
   const [n, setN] = useState(0);
   const history = useRef<string[]>([]);
 
-  const start = (c: DrillContextId) => {
+  const focus = useStore((s) => s.settings.focus);
+  const lesson = lessonOfTopic(focus);
+  const ctxOf = (c: Ctx) =>
+    c === 'lesson' && lesson
+      ? { emoji: lesson.emoji, label: `Lekce ${lesson.n}: ${lesson.title}`, prompt: `textbook lesson ${lesson.n}: ${lesson.vocabTopic}`, cz: lesson.cz }
+      : { ...(DRILL_CONTEXTS.find((d) => d.id === c) ?? DRILL_CONTEXTS[0]), prompt: '' };
+
+  const start = (c: Ctx) => {
     setCtx(c);
     const ch = pickChunks(c);
     setChunks(ch);
@@ -36,7 +50,8 @@ export default function Drill() {
     setEvalRes(null);
     setErr(null);
     setN((x) => x + 1);
-    const label = DRILL_CONTEXTS.find((d) => d.id === c)!.label;
+    const info = ctxOf(c);
+    const label = info.prompt || info.label;
     // generate in the background while the learner reads the chunks
     const p = generateDrill(label, ch.map((x) => x.en), history.current);
     p.then((it) => {
@@ -51,16 +66,16 @@ export default function Drill() {
     setBusy(true);
     setErr(null);
     try {
-      setEvalRes(
-        await evaluate({
+      const r = await evaluate({
           task: `Translate the Czech prompt into natural spoken English. The learner MUST use both fluency chunks: ${chunks
             .map((c) => `"${c.en}"`)
             .join(' and ')}. Also check that the chunks are used naturally (and mention it in explanation_cz if not).`,
           prompt_cz: item.prompt_cz,
           answer: text,
           passRule: 'true only if BOTH fluency chunks are used (small variations OK) AND the translation is accurate and grammatical.',
-        }),
-      );
+        });
+      setEvalRes(r);
+      recordLevelResult(r.passed);
     } catch (e) {
       setErr((e as Error).message);
     } finally {
@@ -71,8 +86,17 @@ export default function Drill() {
   if (!ctx)
     return (
       <div>
-        <ModeHeader title="Aktivní překlad" subtitle="Czech → English with Fluency Chunks" />
+        <ModeHeader title="Aktivní překlad" subtitle="Czech → English with Fluency Chunks" right={<LevelChip />} />
         <div className="text-sm text-muted mb-3">Vyber kontext:</div>
+        {lesson && (
+          <Card onClick={() => start('lesson')} className="mb-3 flex items-center gap-3 border-accent/40 bg-accent/5">
+            <div className="text-2xl">{lesson.emoji}</div>
+            <div className="flex-1">
+              <div className="text-sm font-medium">📘 Lekce {lesson.n}: {lesson.title}</div>
+              <div className="text-xs text-muted">{lesson.grammarTitle}</div>
+            </div>
+          </Card>
+        )}
         <div className="grid grid-cols-2 gap-3">
           {DRILL_CONTEXTS.map((c) => (
             <Card key={c.id} onClick={() => start(c.id)} className="hover:border-accent/50">
@@ -85,16 +109,19 @@ export default function Drill() {
       </div>
     );
 
-  const ctxInfo = DRILL_CONTEXTS.find((d) => d.id === ctx)!;
+  const ctxInfo = ctxOf(ctx);
   return (
     <div>
       <ModeHeader
         title="Aktivní překlad"
         subtitle={`${ctxInfo.emoji} ${ctxInfo.label} · #${n}`}
         right={
-          <Btn variant="ghost" className="h-9 px-2 text-xs" onClick={() => setCtx(null)}>
-            Změnit
-          </Btn>
+          <div className="flex items-center gap-1">
+            <LevelChip onChange={() => start(ctx)} />
+            <Btn variant="ghost" className="h-9 px-2 text-xs" onClick={() => setCtx(null)}>
+              Změnit
+            </Btn>
+          </div>
         }
       />
       <div className="space-y-4">

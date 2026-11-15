@@ -18,10 +18,12 @@ export const defaultSettings: Settings = {
   micMode: 'toggle',
   autoSaveMistakes: true,
   autoPlayRoleplay: true,
+  level: 2,
+  focus: null,
 };
 
 function initial(): AppState {
-  return { version: 1, settings: { ...defaultSettings }, vocab: [], mistakes: [], days: {}, addedPacks: [] };
+  return { version: 1, settings: { ...defaultSettings }, vocab: [], mistakes: [], days: {}, addedPacks: [], levelLog: [] };
 }
 
 function load(): AppState {
@@ -44,6 +46,7 @@ export function normalize(data: unknown): AppState {
     mistakes: Array.isArray(d.mistakes) ? d.mistakes : [],
     days: d.days && typeof d.days === 'object' ? d.days : {},
     addedPacks: Array.isArray(d.addedPacks) ? d.addedPacks : [],
+    levelLog: Array.isArray(d.levelLog) ? d.levelLog : [],
   };
 }
 
@@ -196,4 +199,22 @@ export function importJson(text: string) {
 
 export function resetAll() {
   setState((s) => ({ ...initial(), settings: s.settings }));
+}
+
+/** Remember whether an exercise at the current level was passed (last 40 kept). */
+export function recordLevelResult(ok: boolean) {
+  setState((s) => ({
+    ...s,
+    levelLog: [...s.levelLog, { level: s.settings.level, ok, at: new Date().toISOString(), focus: s.settings.focus }].slice(-40),
+  }));
+}
+
+/** Suggest moving up (8+/10 passed) or down (3 or fewer of 10) from the last 10 results at the current level. */
+export function levelSuggestion(log: AppState['levelLog'], level: number): 'up' | 'down' | null {
+  const recent = log.filter((x) => x.level === level).slice(-10);
+  if (recent.length < 10) return null;
+  const ok = recent.filter((x) => x.ok).length;
+  if (ok >= 8 && level < 5) return 'up';
+  if (ok <= 3 && level > 1) return 'down';
+  return null;
 }

@@ -16,6 +16,9 @@ export interface Settings {
   micMode: MicMode;
   autoSaveMistakes: boolean;
   autoPlayRoleplay: boolean;
+  level: 1 | 2 | 3 | 4 | 5;
+  /** grammar topic id every generated sentence should practise (null = mixed) */
+  focus: string | null;
 }
 
 export interface SrsState {
@@ -101,4 +104,6 @@ export interface AppState {
   mistakes: Mistake[];
   days: Record<string, DayStats>; // key YYYY-MM-DD (local)
   addedPacks: string[];
+  /** recent pass/fail results per level, used to suggest moving up or down */
+  levelLog: { level: number; ok: boolean; at: string; focus?: string | null }[];
 }

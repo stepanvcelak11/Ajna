@@ -6,6 +6,13 @@ import { navigate, type Route } from '../lib/router';
 import { isDue } from '../lib/srs';
 import { streak, todayKey, topTraps, useStore } from '../lib/store';
 import { useOnline } from '../lib/ui';
+import { Btn } from '../components/ui';
+import { levelSuggestion, updateSettings } from '../lib/store';
+import { lessonOfTopic } from '../data/textbook';
+import { findTopic, getLevel } from '../data/levels';
+import { LevelSheet } from '../components/LevelPicker';
+import { Gauge, GraduationCap } from 'lucide-react';
+import { useState } from 'react';
 
 const MODES: { route: Route; letter: string; title: string; cz: string; icon: typeof Mic; color: string }[] = [
   { route: 'ladder', letter: 'A', title: 'Nabalování vět', cz: 'Stavěj složité věty krok po kroku', icon: Layers, color: 'text-violet-400 bg-violet-500/10' },
@@ -21,6 +28,13 @@ export default function Dashboard() {
   const mistakes = useStore((s) => s.mistakes);
   useStore((s) => s.settings);
   const online = useOnline();
+  const level = useStore((s) => s.settings.level);
+  const focus = useStore((s) => s.settings.focus);
+  const levelLog = useStore((s) => s.levelLog);
+  const suggestion = levelSuggestion(levelLog, level);
+  const lesson = lessonOfTopic(focus);
+  const [levelOpen, setLevelOpen] = useState(false);
+  const lv = getLevel(level);
   const today = days[todayKey()] ?? { words: 0, answers: 0 };
   const st = streak(days);
   const vocabDue = vocab.filter((v) => isDue(v.srs.dueDate)).length;
@@ -49,6 +63,47 @@ export default function Dashboard() {
             <div className="font-medium">Nastav API klíč</div>
             <div className="text-xs text-muted">Gemini (zdarma), Claude nebo OpenAI – uložen jen v tomto zařízení.</div>
           </div>
+        </Card>
+      )}
+
+      <div className="grid grid-cols-2 gap-3">
+        <Card onClick={() => setLevelOpen(true)}>
+          <div className="flex items-center gap-1.5 text-accent">
+            <Gauge className="size-4" />
+            <Label className="text-accent">Úroveň</Label>
+          </div>
+          <div className="mt-1 text-2xl font-semibold">
+            {level} <span className="text-sm font-normal text-muted">{lv.name}</span>
+          </div>
+          <div className="text-xs text-muted truncate">{findTopic(focus)?.cz ?? lv.cefr + ' · mix gramatiky'}</div>
+        </Card>
+        <Card onClick={() => navigate('course')}>
+          <div className="flex items-center gap-1.5 text-sky-400">
+            <GraduationCap className="size-4" />
+            <Label className="text-sky-400">Učebnice</Label>
+          </div>
+          <div className="mt-1 text-sm font-medium truncate">{lesson ? `${lesson.emoji} Lekce ${lesson.n}: ${lesson.title}` : 'VYA008 · 11 lekcí'}</div>
+          <div className="text-xs text-accent mt-1">{lesson ? 'Pokračovat →' : 'Vybrat lekci →'}</div>
+        </Card>
+      </div>
+      <LevelSheet open={levelOpen} onClose={() => setLevelOpen(false)} />
+
+      {suggestion && (
+        <Card className={cx('flex items-center gap-3', suggestion === 'up' ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-amber-500/40 bg-amber-500/5')}>
+          <div className="text-2xl">{suggestion === 'up' ? '🚀' : '🧗'}</div>
+          <div className="flex-1 text-sm">
+            <div className="font-medium">{suggestion === 'up' ? 'Na této úrovni ti to jde skvěle!' : 'Tahle úroveň je teď náročná.'}</div>
+            <div className="text-xs text-muted">
+              {suggestion === 'up' ? `Zkus úroveň ${level + 1} – ${getLevel(level + 1).name}.` : `Zkus chvíli úroveň ${level - 1} a pak se vrať.`}
+            </div>
+          </div>
+          <Btn
+            variant="primary"
+            className="h-9 px-3"
+            onClick={() => updateSettings({ level: (suggestion === 'up' ? level + 1 : level - 1) as 1 | 2 | 3 | 4 | 5, focus: lessonOfTopic(focus) ? focus : null })}
+          >
+            {suggestion === 'up' ? 'Postoupit' : 'Ubrat'}
+          </Btn>
         </Card>
       )}
 

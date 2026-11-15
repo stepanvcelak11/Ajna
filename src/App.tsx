@@ -1,4 +1,4 @@
-import { AlertCircle, BookOpen, Home, Settings as Cog, WifiOff } from 'lucide-react';
+import { AlertCircle, BookOpen, GraduationCap, Home, Settings as Cog, WifiOff } from 'lucide-react';
 import { useEffect, type ComponentType } from 'react';
 import { WordRescue } from './components/WordRescue';
 import { cx } from './components/ui';
@@ -16,6 +16,7 @@ import Roleplay from './modes/Roleplay';
 import Settings from './modes/Settings';
 import Vocab from './modes/Vocab';
 import VocabReview from './modes/VocabReview';
+import Course from './modes/Course';
 
 const SCREENS: Record<Route, ComponentType> = {
   home: Dashboard,
@@ -28,13 +29,15 @@ const SCREENS: Record<Route, ComponentType> = {
   mistakes: Mistakes,
   'mistake-practice': MistakePractice,
   settings: Settings,
+  course: Course,
 };
 
 const TABS: { route: Route; label: string; icon: typeof Home; match: Route[] }[] = [
   { route: 'home', label: 'Trénink', icon: Home, match: ['home', 'ladder', 'drill', 'monologue', 'roleplay'] },
+  { route: 'course', label: 'Učebnice', icon: GraduationCap, match: ['course'] },
   { route: 'vocab', label: 'Slovíčka', icon: BookOpen, match: ['vocab', 'vocab-review'] },
   { route: 'mistakes', label: 'Chyby', icon: AlertCircle, match: ['mistakes', 'mistake-practice'] },
-  { route: 'settings', label: 'Nastavení', icon: Cog, match: ['settings'] },
+  { route: 'settings', label: 'Více', icon: Cog, match: ['settings'] },
 ];
 
 export default function App() {
@@ -93,7 +96,7 @@ export default function App() {
       )}
 
       <nav className="fixed bottom-0 inset-x-0 z-40 border-t border-line bg-bg/85 backdrop-blur-xl pb-[env(safe-area-inset-bottom)]">
-        <div className="mx-auto max-w-xl grid grid-cols-4">
+        <div className="mx-auto max-w-xl grid grid-cols-5">
           {TABS.map((t) => {
             const active = t.match.includes(route);
             const b = badges[t.route];
