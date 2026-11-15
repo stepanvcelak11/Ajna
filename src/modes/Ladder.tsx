@@ -8,7 +8,7 @@ import { evaluate, generateLadder, type Ladder as LadderT } from '../lib/ai';
 import type { Evaluation } from '../lib/types';
 import { LADDER_THEMES } from '../data/content';
 import { recordLevelResult } from '../lib/store';
-import { LevelChip } from '../components/LevelPicker';
+import { PracticeBar } from '../components/LevelPicker';
 import { getState } from '../lib/store';
 import { lessonOfTopic } from '../data/textbook';
 
@@ -123,17 +123,17 @@ In native_version, show how a native speaker connects the clauses smoothly. Refe
         title="Nabalování vět"
         subtitle="Sentence Expansion Ladder"
         right={
-          <div className="flex items-center gap-1">
-            <LevelChip
-              onChange={() => {
-                nextRef.current = null;
-                setPendingReload(true);
-              }}
-            />
-            <Btn variant="ghost" className="h-10 px-3" onClick={load} aria-label="Nová věta">
-              <RefreshCw className="size-4" />
-            </Btn>
-          </div>
+          <Btn variant="ghost" className="h-10 px-3" onClick={load} aria-label="Nová věta">
+            <RefreshCw className="size-4" />
+          </Btn>
+        }
+        below={
+          <PracticeBar
+            onChange={() => {
+              nextRef.current = null;
+              setPendingReload(true);
+            }}
+          />
         }
       />
       {err && <ErrorBox error={err} onRetry={ladder ? undefined : load} />}

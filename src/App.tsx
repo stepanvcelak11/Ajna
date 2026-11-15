@@ -37,7 +37,7 @@ const TABS: { route: Route; label: string; icon: typeof Home; match: Route[] }[]
   { route: 'course', label: 'Učebnice', icon: GraduationCap, match: ['course'] },
   { route: 'vocab', label: 'Slovíčka', icon: BookOpen, match: ['vocab', 'vocab-review'] },
   { route: 'mistakes', label: 'Chyby', icon: AlertCircle, match: ['mistakes', 'mistake-practice'] },
-  { route: 'settings', label: 'Více', icon: Cog, match: ['settings'] },
+  { route: 'settings', label: 'Nastavení', icon: Cog, match: ['settings'] },
 ];
 
 export default function App() {

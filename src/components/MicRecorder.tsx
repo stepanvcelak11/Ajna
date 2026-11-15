@@ -158,7 +158,7 @@ export function MicRecorder({
       {sr.error && <div className="text-xs text-red-500">{sr.error}</div>}
       {!sttSupported && (
         <div className="text-xs text-muted">
-          Rozpoznávání řeči tu není dostupné – použij diktování na klávesnici telefonu (ikona 🎤) a piš do pole.
+          Rozpoznávání řeči tu není dostupné – použij diktování na klávesnici telefonu (ikona mikrofonu) a piš do pole.
         </div>
       )}
 
@@ -199,7 +199,7 @@ export function MicRecorder({
               onClick={() => updateSettings({ accent: accent === 'en-US' ? 'en-GB' : 'en-US' })}
               className="rounded-md border border-line px-1.5 py-0.5 text-[10px] text-muted hover:text-fg"
             >
-              {accent === 'en-US' ? '🇺🇸 US' : '🇬🇧 UK'}
+              {accent === 'en-US' ? 'Přízvuk US' : 'Přízvuk UK'}
             </button>
             {sr.text && !sr.listening && (
               <button

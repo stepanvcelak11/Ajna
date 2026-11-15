@@ -110,7 +110,7 @@ export default function Vocab() {
 
       {list.length === 0 ? (
         <Card className="text-center text-sm text-muted py-8">
-          {vocab.length ? 'Nic nenalezeno.' : 'Zatím žádná slovíčka. Přidej balíček výše nebo použij 🛟 Word Rescue.'}
+          {vocab.length ? 'Nic nenalezeno.' : 'Zatím žádná slovíčka. Přidej balíček výše nebo použij „Nevím slovo“.'}
         </Card>
       ) : (
         <div className="space-y-2">

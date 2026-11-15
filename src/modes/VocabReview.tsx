@@ -11,6 +11,7 @@ import { navigate } from '../lib/router';
 import { formatInterval, isDue, review } from '../lib/srs';
 import { getState, setState } from '../lib/store';
 import type { Evaluation, VocabCard } from '../lib/types';
+import { IconTile, LangBadge } from '../components/icons';
 
 const SESSION_MAX = 20;
 
@@ -125,7 +126,7 @@ export default function VocabReview() {
       <div>
         <ModeHeader title="Opakování slovíček" />
         <Card className="text-center py-10 space-y-3">
-          <div className="text-3xl">✨</div>
+          <div className="flex justify-center"><IconTile name="sparkle" tone="violet" size="lg" /></div>
           <div className="font-medium">Nic k opakování</div>
           <div className="text-sm text-muted">Přidej balíček nebo ulož slova během tréninku.</div>
           <Btn variant="primary" onClick={() => navigate('vocab')}>
@@ -140,7 +141,7 @@ export default function VocabReview() {
       <div>
         <ModeHeader title="Opakování slovíček" />
         <Card className="text-center py-10 space-y-3">
-          <div className="text-3xl">🎉</div>
+          <div className="flex justify-center"><IconTile name="trophy" tone="emerald" size="lg" /></div>
           <div className="font-medium">Hotovo!</div>
           <div className="text-sm text-muted">
             Prošlo: <span className="text-emerald-500 font-semibold">{stats.pass}</span> · Znovu:{' '}
@@ -175,9 +176,9 @@ export default function VocabReview() {
         <Card>
           <div className="flex items-center justify-between">
             <Label>{card.pos}</Label>
-            <span className="text-[10px] text-muted">{card.source === 'starter' ? card.pack : card.source === 'rescue' ? '🛟 rescue' : '👆 uloženo'}</span>
+            <span className="text-[10px] text-muted">{card.source === 'starter' ? card.pack : card.source === 'rescue' ? 'záchranný slovník' : 'uloženo'}</span>
           </div>
-          <div className="mt-2 text-2xl font-semibold">🇨🇿 {card.cz}</div>
+          <div className="mt-2 text-2xl font-semibold flex items-center gap-2"><LangBadge code="CZ" className="text-xs" /> {card.cz}</div>
           <div className="mt-3 text-[17px] leading-relaxed">
             <ExampleText text={gapped} blank={!recall} />
           </div>

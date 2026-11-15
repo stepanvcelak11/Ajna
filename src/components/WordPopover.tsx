@@ -5,6 +5,7 @@ import { addVocab, hasVocab, useStore } from '../lib/store';
 import { toast } from '../lib/ui';
 import { SpeakButton } from './Speak';
 import { Btn, ErrorBox, ExampleText, Label, Sheet, Spinner } from './ui';
+import { LangBadge } from './icons';
 
 /** Sentence where every word is tappable → Czech translation / collocation / save to vocab. */
 export function ClickableText({ text, className }: { text: string; className?: string }) {
@@ -65,7 +66,7 @@ function WordSheet({ word, sentence, onClose }: { word: string | null; sentence:
             </div>
             <SpeakButton text={data.lemma} />
           </div>
-          <div className="text-lg">🇨🇿 {data.cz}</div>
+          <div className="text-lg flex items-center gap-2"><LangBadge code="CZ" /> {data.cz}</div>
           {data.collocation && (
             <div>
               <Label>Kolokace</Label>

@@ -1,6 +1,7 @@
-import { AlertTriangle, BookOpen, Check, ChevronLeft, ChevronRight, Layers, MessageCircle, Plus, Repeat2, Target, Timer } from 'lucide-react';
+import { AlertTriangle, BookOpen, Check, ChevronLeft, ChevronRight, Layers, MessageCircle, Plus, Repeat2, Target, Timer, X } from 'lucide-react';
 import { useState } from 'react';
-import { LevelChip } from '../components/LevelPicker';
+import { PracticeBar } from '../components/LevelPicker';
+import { IconTile } from '../components/icons';
 import { SpeakButton } from '../components/Speak';
 import { Btn, Card, ExampleText, Label, cx } from '../components/ui';
 import { COURSE, LESSONS, lessonOfTopic, packIdOf, type Lesson } from '../data/textbook';
@@ -40,23 +41,29 @@ export default function Course() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <div className="text-xs text-muted">📘 {COURSE.code}</div>
-          <h1 className="text-xl font-semibold">{COURSE.title}</h1>
-          <div className="text-xs text-muted mt-0.5">{COURSE.note}</div>
-        </div>
-        <LevelChip />
+      <div>
+        <div className="text-xs font-medium text-muted">Učebnice {COURSE.code}</div>
+        <h1 className="text-2xl font-bold tracking-tight">{COURSE.title}</h1>
+        <div className="text-xs text-muted mt-1">{COURSE.note}</div>
       </div>
 
       {active && (
-        <Card onClick={() => setOpen(active.n)} className="border-accent/40 bg-accent/5 flex items-center gap-3">
-          <Target className="size-5 text-accent" />
-          <div className="flex-1 text-sm">
-            <div className="font-medium">Pokračovat: Lekce {active.n} – {active.title}</div>
-            <div className="text-xs text-muted">Všechny režimy teď procvičují tuto lekci.</div>
+        <Card className="border-amber-500/40 bg-amber-500/5 space-y-3">
+          <div className="flex items-center gap-3" onClick={() => setOpen(active.n)}>
+            <IconTile name={active.icon} tone={active.tone} />
+            <div className="flex-1 text-sm">
+              <div className="font-semibold">Právě procvičuješ lekci {active.n}: {active.title}</div>
+              <div className="text-xs text-muted">Všechny režimy teď používají tuto lekci.</div>
+            </div>
           </div>
-          <ChevronRight className="size-4 text-muted" />
+          <div className="flex gap-2">
+            <Btn variant="secondary" className="flex-1 h-9" onClick={() => setOpen(active.n)}>
+              Otevřít lekci
+            </Btn>
+            <Btn variant="secondary" className="flex-1 h-9" onClick={() => updateSettings({ focus: null })}>
+              <X className="size-4" /> Ukončit lekci
+            </Btn>
+          </div>
         </Card>
       )}
 
@@ -67,7 +74,7 @@ export default function Course() {
           return (
             <Card key={l.n} onClick={() => setOpen(l.n)} className={cx('py-3', active?.n === l.n && 'border-accent/50')}>
               <div className="flex items-center gap-3">
-                <div className="size-11 rounded-xl bg-surface-2 grid place-items-center text-xl shrink-0">{l.emoji}</div>
+                <IconTile name={l.icon} tone={l.tone} />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium">
                     <span className="text-muted mr-1.5">{l.n}</span>
@@ -121,15 +128,23 @@ function LessonView({ lesson: l, onBack }: { lesson: Lesson; onBack: () => void 
           <div className="text-xs text-muted">
             Lekce {l.n} · {p.done}/{GOAL} úspěšných odpovědí
           </div>
-          <h1 className="text-lg font-semibold leading-tight">
-            {l.emoji} {l.title} <span className="text-muted font-normal text-base">· {l.cz}</span>
+          <h1 className="text-xl font-bold tracking-tight leading-tight">
+            {l.title} <span className="text-muted font-normal text-base">· {l.cz}</span>
           </h1>
         </div>
-        <LevelChip />
+        <IconTile name={l.icon} tone={l.tone} />
       </div>
 
+      {inLesson ? (
+        <PracticeBar />
+      ) : (
+        <Btn variant="primary" className="w-full h-12" onClick={ensureFocus}>
+          <Target className="size-4" /> Procvičovat tuto lekci
+        </Btn>
+      )}
+
       <Card className="space-y-3">
-        <Label>Trénovat tuto lekci</Label>
+        <Label>Trénink lekce</Label>
         <div className="grid grid-cols-2 gap-2">
           {MODES.map((m) => (
             <Btn key={m.route} variant="secondary" className="h-12 justify-start" onClick={() => go(m.route)}>

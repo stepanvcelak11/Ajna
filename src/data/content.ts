@@ -1,8 +1,10 @@
+import type { Tone } from '../components/icons';
+
 export const DRILL_CONTEXTS = [
-  { id: 'everyday', label: 'Everyday Life', cz: 'Běžný život', emoji: '🏠' },
-  { id: 'work', label: 'Workplace & Meetings', cz: 'Práce a porady', emoji: '💼' },
-  { id: 'travel', label: 'Travel & Logistics', cz: 'Cestování', emoji: '✈️' },
-  { id: 'opinions', label: 'Expressing Opinions', cz: 'Názory', emoji: '💬' },
+  { id: 'everyday', label: 'Everyday Life', cz: 'Běžný život', icon: 'home', tone: 'sky' },
+  { id: 'work', label: 'Workplace & Meetings', cz: 'Práce a porady', icon: 'briefcase', tone: 'indigo' },
+  { id: 'travel', label: 'Travel & Logistics', cz: 'Cestování', icon: 'plane', tone: 'teal' },
+  { id: 'opinions', label: 'Expressing Opinions', cz: 'Názory', icon: 'chat', tone: 'amber' },
 ] as const;
 
 export type DrillContextId = (typeof DRILL_CONTEXTS)[number]['id'];
@@ -82,7 +84,8 @@ export interface Scenario {
   id: string;
   title: string;
   cz: string;
-  emoji: string;
+  icon: string;
+  tone: Tone;
   aiRole: string;
   userRole: string;
   goal: string;
@@ -96,7 +99,8 @@ export const SCENARIOS: Scenario[] = [
     id: 'hotel',
     title: 'Hotel room problem',
     cz: 'Problém s hotelovým pokojem',
-    emoji: '🏨',
+    icon: 'bed',
+    tone: 'sky',
     aiRole: 'Hotel receptionist',
     userRole: 'Guest',
     goal: 'The air conditioning in your room is broken and it is very noisy outside. Get a different room or a discount.',
@@ -108,7 +112,8 @@ export const SCENARIOS: Scenario[] = [
     id: 'smalltalk',
     title: 'Small talk before a meeting',
     cz: 'Small talk před poradou',
-    emoji: '☕',
+    icon: 'coffee',
+    tone: 'amber',
     aiRole: 'Friendly colleague from the London office (Mark)',
     userRole: 'Colleague from the Prague office',
     goal: 'Chat naturally for a few minutes before a video call starts: weekend, weather, work.',
@@ -120,7 +125,8 @@ export const SCENARIOS: Scenario[] = [
     id: 'pharmacy',
     title: 'At the pharmacy',
     cz: 'V lékárně',
-    emoji: '💊',
+    icon: 'pill',
+    tone: 'rose',
     aiRole: 'Pharmacist',
     userRole: 'Customer on holiday',
     goal: 'Explain that you have had a sore throat and a headache for two days and ask for something that will help.',
@@ -132,7 +138,8 @@ export const SCENARIOS: Scenario[] = [
     id: 'restaurant',
     title: 'Wrong order at a restaurant',
     cz: 'Špatná objednávka v restauraci',
-    emoji: '🍝',
+    icon: 'plate',
+    tone: 'orange',
     aiRole: 'Waiter',
     userRole: 'Customer',
     goal: 'You got the wrong dish and you have a nut allergy. Politely sort it out.',
@@ -144,7 +151,8 @@ export const SCENARIOS: Scenario[] = [
     id: 'interview',
     title: 'Job interview',
     cz: 'Pracovní pohovor',
-    emoji: '🧑‍💼',
+    icon: 'tie',
+    tone: 'indigo',
     aiRole: 'HR manager at an international company',
     userRole: 'Job candidate',
     goal: 'Introduce yourself, talk about your experience and why you want the job.',
@@ -156,7 +164,8 @@ export const SCENARIOS: Scenario[] = [
     id: 'train',
     title: 'Missed connection',
     cz: 'Zmeškaný přípoj',
-    emoji: '🚆',
+    icon: 'train',
+    tone: 'teal',
     aiRole: 'Train station information desk clerk',
     userRole: 'Traveller',
     goal: 'Your train was late and you missed your connection to the airport. Find the fastest alternative and ask about your ticket.',
@@ -168,7 +177,8 @@ export const SCENARIOS: Scenario[] = [
     id: 'landlord',
     title: 'Calling your landlord',
     cz: 'Telefonát pronajímateli',
-    emoji: '🔧',
+    icon: 'wrench',
+    tone: 'slate',
     aiRole: 'Landlord (Mr. Peters)',
     userRole: 'Tenant',
     goal: 'The washing machine has been leaking since yesterday. Arrange a repair this week.',

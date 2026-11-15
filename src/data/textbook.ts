@@ -3,6 +3,7 @@
 // points and key vocabulary) is used here; all explanations and example sentences are original.
 
 import type { GrammarTopic } from './levels';
+import type { Tone } from '../components/icons';
 import type { StarterItem } from './starterPacks';
 
 export interface LessonTopic extends GrammarTopic {
@@ -16,7 +17,8 @@ export interface Lesson {
   n: number;
   title: string; // English topic
   cz: string;
-  emoji: string;
+  icon: string;
+  tone: Tone;
   vocabTopic: string; // used in prompts
   grammarTitle: string;
   topics: LessonTopic[];
@@ -37,7 +39,8 @@ export const LESSONS: Lesson[] = [
     n: 1,
     title: 'Food',
     cz: 'Jídlo a vaření',
-    emoji: '🍝',
+    icon: 'plate',
+    tone: 'orange',
     vocabTopic: 'food, cooking, restaurants and eating habits',
     grammarTitle: 'Present simple & continuous; action vs non-action verbs',
     topics: [
@@ -99,7 +102,8 @@ export const LESSONS: Lesson[] = [
     n: 2,
     title: 'Family',
     cz: 'Rodina a povaha',
-    emoji: '👨‍👩‍👧',
+    icon: 'family',
+    tone: 'pink',
     vocabTopic: 'family, relatives, relationships and personality adjectives',
     grammarTitle: 'Future forms: going to, present continuous, will, shall',
     topics: [
@@ -151,7 +155,8 @@ export const LESSONS: Lesson[] = [
     n: 3,
     title: 'Money',
     cz: 'Peníze',
-    emoji: '💰',
+    icon: 'coins',
+    tone: 'amber',
     vocabTopic: 'money, shopping, banks, saving and borrowing',
     grammarTitle: 'Present perfect & past simple; for/since; present perfect continuous',
     topics: [
@@ -213,7 +218,8 @@ export const LESSONS: Lesson[] = [
     n: 4,
     title: 'Transport',
     cz: 'Doprava',
-    emoji: '🚗',
+    icon: 'car',
+    tone: 'sky',
     vocabTopic: 'transport, traffic, driving and getting around a city',
     grammarTitle: 'Modal verbs: ability, obligation, advice, deduction',
     topics: [
@@ -285,7 +291,8 @@ export const LESSONS: Lesson[] = [
     n: 5,
     title: 'Sport',
     cz: 'Sport',
-    emoji: '⚽',
+    icon: 'ball',
+    tone: 'emerald',
     vocabTopic: 'sport, matches, fitness and sports events',
     grammarTitle: 'Past tenses: simple, continuous, perfect; telling a story',
     topics: [
@@ -336,7 +343,8 @@ export const LESSONS: Lesson[] = [
     n: 6,
     title: 'Electronic devices',
     cz: 'Elektronika',
-    emoji: '🔌',
+    icon: 'plug',
+    tone: 'indigo',
     vocabTopic: 'electronic devices, gadgets and technology at home',
     grammarTitle: 'Quantifiers; articles',
     topics: [
@@ -399,7 +407,8 @@ export const LESSONS: Lesson[] = [
     n: 7,
     title: 'Cinema',
     cz: 'Film a kino',
-    emoji: '🎬',
+    icon: 'film',
+    tone: 'rose',
     vocabTopic: 'films, cinema and the film industry',
     grammarTitle: 'Passive voice (all tenses)',
     topics: [
@@ -451,7 +460,8 @@ export const LESSONS: Lesson[] = [
     n: 8,
     title: 'Education',
     cz: 'Vzdělání',
-    emoji: '🎓',
+    icon: 'cap',
+    tone: 'violet',
     vocabTopic: 'school, university, exams and studying',
     grammarTitle: 'First conditional & future time clauses',
     topics: [
@@ -502,7 +512,8 @@ export const LESSONS: Lesson[] = [
     n: 9,
     title: 'Houses',
     cz: 'Bydlení',
-    emoji: '🏠',
+    icon: 'home',
+    tone: 'teal',
     vocabTopic: 'houses, flats, rooms and where people live',
     grammarTitle: 'Second conditional (vs first conditional)',
     topics: [
@@ -553,7 +564,8 @@ export const LESSONS: Lesson[] = [
     n: 10,
     title: 'Work',
     cz: 'Práce',
-    emoji: '💼',
+    icon: 'briefcase',
+    tone: 'slate',
     vocabTopic: 'jobs, work conditions, careers and applying for jobs',
     grammarTitle: 'Gerunds and infinitives',
     topics: [
@@ -605,7 +617,8 @@ export const LESSONS: Lesson[] = [
     n: 11,
     title: 'Shopping',
     cz: 'Nakupování',
-    emoji: '🛍️',
+    icon: 'bag',
+    tone: 'lime',
     vocabTopic: 'shopping in shops and online, returns and complaints',
     grammarTitle: 'Reported speech; making a complaint',
     topics: [

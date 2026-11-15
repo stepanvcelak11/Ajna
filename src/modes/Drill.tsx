@@ -8,9 +8,11 @@ import { DRILL_CONTEXTS, FLUENCY_CHUNKS, type DrillContextId } from '../data/con
 import { evaluate, generateDrill, type DrillItem } from '../lib/ai';
 import type { Evaluation } from '../lib/types';
 import { recordLevelResult } from '../lib/store';
-import { LevelChip } from '../components/LevelPicker';
+import { PracticeBar } from '../components/LevelPicker';
 import { useStore } from '../lib/store';
 import { lessonOfTopic } from '../data/textbook';
+import { getState } from '../lib/store';
+import { Icon, IconTile } from '../components/icons';
 
 type Ctx = DrillContextId | 'lesson';
 
@@ -36,9 +38,9 @@ export default function Drill() {
 
   const focus = useStore((s) => s.settings.focus);
   const lesson = lessonOfTopic(focus);
-  const ctxOf = (c: Ctx) =>
-    c === 'lesson' && lesson
-      ? { emoji: lesson.emoji, label: `Lekce ${lesson.n}: ${lesson.title}`, prompt: `textbook lesson ${lesson.n}: ${lesson.vocabTopic}`, cz: lesson.cz }
+  const ctxOf = (c: Ctx, l = lessonOfTopic(getState().settings.focus)) =>
+    c === 'lesson' && l
+      ? { icon: l.icon, tone: l.tone, label: `Lekce ${l.n}: ${l.title}`, prompt: `textbook lesson ${l.n}: ${l.vocabTopic}`, cz: l.cz }
       : { ...(DRILL_CONTEXTS.find((d) => d.id === c) ?? DRILL_CONTEXTS[0]), prompt: '' };
 
   const start = (c: Ctx) => {
@@ -86,23 +88,28 @@ export default function Drill() {
   if (!ctx)
     return (
       <div>
-        <ModeHeader title="Aktivní překlad" subtitle="Czech → English with Fluency Chunks" right={<LevelChip />} />
-        <div className="text-sm text-muted mb-3">Vyber kontext:</div>
+        <ModeHeader title="Aktivní překlad" subtitle="Přelož českou větu nahlas" below={<PracticeBar />} />
         {lesson && (
-          <Card onClick={() => start('lesson')} className="mb-3 flex items-center gap-3 border-accent/40 bg-accent/5">
-            <div className="text-2xl">{lesson.emoji}</div>
-            <div className="flex-1">
-              <div className="text-sm font-medium">📘 Lekce {lesson.n}: {lesson.title}</div>
-              <div className="text-xs text-muted">{lesson.grammarTitle}</div>
-            </div>
-          </Card>
+          <>
+            <Label className="mb-2">Z učebnice</Label>
+            <Card onClick={() => start('lesson')} className="mb-5 flex items-center gap-3 border-amber-500/40 bg-amber-500/5">
+              <IconTile name={lesson.icon} tone={lesson.tone} />
+              <div className="flex-1">
+                <div className="text-sm font-semibold">
+                  Lekce {lesson.n}: {lesson.title}
+                </div>
+                <div className="text-xs text-muted">{lesson.grammarTitle}</div>
+              </div>
+            </Card>
+          </>
         )}
+        <Label className="mb-2">Vyber téma</Label>
         <div className="grid grid-cols-2 gap-3">
           {DRILL_CONTEXTS.map((c) => (
             <Card key={c.id} onClick={() => start(c.id)} className="hover:border-accent/50">
-              <div className="text-2xl">{c.emoji}</div>
-              <div className="mt-2 font-medium text-sm">{c.label}</div>
-              <div className="text-xs text-muted">{c.cz}</div>
+              <IconTile name={c.icon} tone={c.tone} />
+              <div className="mt-3 font-semibold text-sm">{c.cz}</div>
+              <div className="text-xs text-muted">{c.label}</div>
             </Card>
           ))}
         </div>
@@ -114,15 +121,13 @@ export default function Drill() {
     <div>
       <ModeHeader
         title="Aktivní překlad"
-        subtitle={`${ctxInfo.emoji} ${ctxInfo.label} · #${n}`}
+        subtitle={`${ctxInfo.label} · věta ${n}`}
         right={
-          <div className="flex items-center gap-1">
-            <LevelChip onChange={() => start(ctx)} />
-            <Btn variant="ghost" className="h-9 px-2 text-xs" onClick={() => setCtx(null)}>
-              Změnit
-            </Btn>
-          </div>
+          <Btn variant="ghost" className="h-9 px-2.5 text-xs" onClick={() => setCtx(null)}>
+            Změnit téma
+          </Btn>
         }
+        below={<PracticeBar onChange={() => start(ctx === 'lesson' && !lessonOfTopic(getState().settings.focus) ? 'everyday' : ctx)} />}
       />
       <div className="space-y-4">
         <Card>
@@ -153,7 +158,11 @@ export default function Drill() {
               <Card className={cx('animate-up')}>
                 <Label>Přelož a řekni nahlas</Label>
                 <div className="mt-2 text-xl font-medium leading-snug">{item.prompt_cz}</div>
-                {item.note_cz && <div className="mt-2 text-xs text-muted">💡 {item.note_cz}</div>}
+                {item.note_cz && (
+                  <div className="mt-2 flex items-center gap-1.5 text-xs text-muted">
+                    <Icon name="bulb" className="size-3.5" /> {item.note_cz}
+                  </div>
+                )}
               </Card>
             )}
             {item && !evalRes && <MicRecorder resetKey={n} onSubmit={submit} busy={busy} />}

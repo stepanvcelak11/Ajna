@@ -13,7 +13,7 @@ import type { Evaluation } from '../lib/types';
 import { toast, useAction } from '../lib/ui';
 import { getState } from '../lib/store';
 import { getLevel } from '../data/levels';
-import { LevelChip } from '../components/LevelPicker';
+import { PracticeBar } from '../components/LevelPicker';
 import { lessonOfTopic } from '../data/textbook';
 
 
@@ -126,13 +126,11 @@ export default function Monologue() {
         title={`${LIMIT}s monolog`}
         subtitle="Mluv volně – chyby nevadí"
         right={
-          <div className="flex items-center gap-1">
-          <LevelChip onChange={() => setTimeout(() => setLeft(getLevel(getState().settings.level).monologueSec), 0)} />
           <Btn variant="ghost" className="h-10 px-3" onClick={newPrompt} aria-label="Jiné téma">
             <RefreshCw className="size-4" />
           </Btn>
-          </div>
         }
+        below={<PracticeBar onChange={() => setTimeout(() => setLeft(getLevel(getState().settings.level).monologueSec), 0)} />}
       />
       <div className="space-y-4">
         <Card>

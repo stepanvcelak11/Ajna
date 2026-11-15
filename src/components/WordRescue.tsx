@@ -73,7 +73,7 @@ export function WordRescue() {
   };
 
   return (
-    <Sheet open={open} onClose={close} title="🛟 Word Rescue – záchranný slovník">
+    <Sheet open={open} onClose={close} title="Nevím slovo – záchranný slovník">
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -150,7 +150,7 @@ export function WordRescue() {
               <ExampleText text={res.example} className="text-sm flex-1" />
               <SpeakButton text={res.example} compact />
             </div>
-            <div className="text-[11px] text-muted">✓ Automaticky uloženo do slovíček k procvičení.</div>
+            <div className="text-[11px] text-muted">Automaticky uloženo do slovíček k procvičení.</div>
           </div>
         )}
       </div>

@@ -7,6 +7,7 @@ import { navigate } from '../lib/router';
 import { isDue } from '../lib/srs';
 import { setState, topTraps, useStore } from '../lib/store';
 import type { Mistake } from '../lib/types';
+import { LangBadge } from '../components/icons';
 
 export default function Mistakes() {
   const mistakes = useStore((s) => s.mistakes);
@@ -102,7 +103,7 @@ function MistakeRow({ m }: { m: Mistake }) {
       </div>
       {open && (
         <div className="mt-3 space-y-3 animate-up" onClick={(e) => e.stopPropagation()}>
-          {m.prompt_cz && <div className="text-xs text-muted">🇨🇿 {m.prompt_cz}</div>}
+          {m.prompt_cz && <div className="text-xs text-muted flex items-center gap-1.5"><LangBadge code="CZ" /> {m.prompt_cz}</div>}
           <div className="flex items-start gap-2">
             <div className="flex-1 text-sm">
               <Label>Rodilá verze</Label>

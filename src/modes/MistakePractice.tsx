@@ -9,7 +9,8 @@ import { isDue } from '../lib/srs';
 import { getState, setState } from '../lib/store';
 import type { Evaluation, Mistake } from '../lib/types';
 import { recordLevelResult } from '../lib/store';
-import { LevelChip } from '../components/LevelPicker';
+import { PracticeBar } from '../components/LevelPicker';
+import { IconTile } from '../components/icons';
 
 const DAY = 86400000;
 
@@ -99,7 +100,7 @@ export default function MistakePractice() {
       <div>
         <ModeHeader title="Procvičit chyby" />
         <Card className="text-center py-10 space-y-3">
-          <div className="text-3xl">{queue.length ? '🏁' : '✨'}</div>
+          <div className="flex justify-center"><IconTile name={queue.length ? 'trophy' : 'sparkle'} tone="emerald" size="lg" /></div>
           <div className="font-medium">{queue.length ? 'Hotovo!' : 'Žádné chyby k procvičení'}</div>
           {queue.length > 0 && (
             <div className="text-sm text-muted">
@@ -115,7 +116,7 @@ export default function MistakePractice() {
 
   return (
     <div>
-      <ModeHeader title="Procvičit chyby" subtitle={`${i + 1} / ${queue.length}`} right={<LevelChip />} />
+      <ModeHeader title="Procvičit chyby" subtitle={`${i + 1} / ${queue.length}`} below={<PracticeBar />} />
       <div className="space-y-4">
         <Card className="py-3">
           <Label>Trénuješ vzorec</Label>

@@ -50,6 +50,9 @@ const KEY_HELP: Record<Provider, { name: string; steps: string[]; url: string; u
   },
 };
 import { toast } from '../lib/ui';
+import { lessonOfTopic } from '../data/textbook';
+import { findTopic } from '../data/levels';
+import { LevelList } from '../components/LevelPicker';
 
 function Seg<T extends string | number>({ value, options, onChange }: { value: T; options: { v: T; label: string }[]; onChange: (v: T) => void }) {
   return (
@@ -216,13 +219,28 @@ export default function Settings() {
         </div>
       </Card>
 
+      <Card className="space-y-3">
+        <Label>Obtížnost</Label>
+        <LevelList />
+        <div className="flex items-center gap-2 rounded-xl bg-surface-2 px-3 py-2.5 text-sm">
+          <span className="flex-1 min-w-0 truncate">
+            Procvičuješ: <b>{lessonOfTopic(s.focus) ? `Lekce ${lessonOfTopic(s.focus)!.n}` : findTopic(s.focus)?.cz ?? 'obecně (mix)'}</b>
+          </span>
+          {s.focus && (
+            <Btn variant="secondary" className="h-8 px-2.5 text-xs" onClick={() => set({ focus: null })}>
+              Obecně
+            </Btn>
+          )}
+        </div>
+      </Card>
+
       <Card className="divide-y divide-line py-1.5">
         <Row label="Vzhled">
           <Seg
             value={s.theme}
             options={[
-              { v: 'dark', label: '🌙' },
-              { v: 'light', label: '☀️' },
+              { v: 'dark', label: 'Tmavý' },
+              { v: 'light', label: 'Světlý' },
             ]}
             onChange={(v) => set({ theme: v })}
           />
@@ -231,8 +249,8 @@ export default function Settings() {
           <Seg
             value={s.accent}
             options={[
-              { v: 'en-US', label: '🇺🇸 US' },
-              { v: 'en-GB', label: '🇬🇧 UK' },
+              { v: 'en-US', label: 'US' },
+              { v: 'en-GB', label: 'UK' },
             ]}
             onChange={(v) => set({ accent: v })}
           />

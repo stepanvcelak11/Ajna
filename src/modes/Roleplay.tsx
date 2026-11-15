@@ -10,9 +10,10 @@ import { speak } from '../lib/speech';
 import { getState, isMistakeSaved, saveMistake } from '../lib/store';
 import type { Evaluation, TrapCategory } from '../lib/types';
 import { toast, useAction } from '../lib/ui';
-import { LevelChip } from '../components/LevelPicker';
+import { PracticeBar } from '../components/LevelPicker';
 import { useStore } from '../lib/store';
 import { lessonOfTopic } from '../data/textbook';
+import { IconTile } from '../components/icons';
 
 interface Msg {
   who: 'ai' | 'user';
@@ -63,7 +64,7 @@ function CoachTip({ tip }: { tip: NonNullable<Msg['tip']> }) {
 export default function Roleplay() {
   const lesson = lessonOfTopic(useStore((s) => s.settings.focus));
   const lessonScenario: Scenario[] = lesson
-    ? [{ id: `lesson-${lesson.n}`, emoji: '📘', turns: 5, ...lesson.roleplay, title: `L${lesson.n}: ${lesson.roleplay.title}` }]
+    ? [{ id: `lesson-${lesson.n}`, turns: 5, ...lesson.roleplay, icon: lesson.icon, tone: lesson.tone, title: `L${lesson.n}: ${lesson.roleplay.title}` }]
     : [];
   const [sc, setSc] = useState<Scenario | null>(null);
   const [msgs, setMsgs] = useState<Msg[]>([]);
@@ -123,14 +124,14 @@ export default function Roleplay() {
   if (!sc)
     return (
       <div>
-        <ModeHeader title="Hraní rolí" subtitle="Situational Voice Roleplay" right={<LevelChip />} />
+        <ModeHeader title="Hraní rolí" subtitle="Vyber situaci a mluv" below={<PracticeBar />} />
         <div className="space-y-2.5">
           {[...lessonScenario, ...SCENARIOS].map((s) => (
             <Card key={s.id} onClick={() => begin(s)} className="flex items-center gap-3 hover:border-accent/50">
-              <div className="text-2xl">{s.emoji}</div>
+              <IconTile name={s.icon} tone={s.tone} />
               <div className="flex-1 min-w-0">
-                <div className="font-medium text-sm">{s.title}</div>
-                <div className="text-xs text-muted">{s.cz}</div>
+                <div className="font-semibold text-sm">{s.cz}</div>
+                <div className="text-xs text-muted">{s.title}</div>
               </div>
               <div className="text-[11px] text-muted">{s.turns} tahů</div>
             </Card>
@@ -143,7 +144,7 @@ export default function Roleplay() {
   return (
     <div>
       <ModeHeader
-        title={`${sc.emoji} ${sc.title}`}
+        title={sc.cz}
         subtitle={`Ty: ${sc.userRole} · ${Math.min(userTurns, sc.turns)}/${sc.turns}`}
         right={
           <Btn variant="ghost" className="h-9 px-2 text-xs" onClick={() => setSc(null)}>
@@ -188,7 +189,7 @@ export default function Roleplay() {
         <MicRecorder resetKey={k} onSubmit={send} busy={busy} submitLabel="Odeslat" placeholder="Tvoje odpověď…" />
       ) : (
         <Card className="space-y-3 animate-up">
-          <Label>Konec rozhovoru 🎉</Label>
+          <Label>Konec rozhovoru</Label>
           <div className="text-sm">
             {tips.length ? `Coach měl ${tips.length} ${tips.length === 1 ? 'tip' : 'tipy'} – uložené v Bance chyb.` : 'Žádné chyby – skvělá práce!'}
           </div>

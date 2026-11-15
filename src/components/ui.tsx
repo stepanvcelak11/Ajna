@@ -92,21 +92,24 @@ export function ErrorBox({ error, onRetry }: { error: string; onRetry?: () => vo
   );
 }
 
-export function ModeHeader({ title, subtitle, right }: { title: string; subtitle?: string; right?: ReactNode }) {
+export function ModeHeader({ title, subtitle, right, below }: { title: string; subtitle?: string; right?: ReactNode; below?: ReactNode }) {
   return (
-    <div className="flex items-center gap-2 mb-4">
-      <button
-        aria-label="Zpět"
-        onClick={() => (history.length > 1 ? history.back() : navigate('home'))}
-        className="size-10 -ml-2 grid place-items-center rounded-xl text-muted hover:text-fg hover:bg-surface-2"
-      >
-        <ArrowLeft className="size-5" />
-      </button>
-      <div className="flex-1 min-w-0">
-        <h1 className="text-lg font-semibold leading-tight truncate">{title}</h1>
-        {subtitle && <div className="text-xs text-muted truncate">{subtitle}</div>}
+    <div className="mb-5 space-y-3">
+      <div className="flex items-center gap-2">
+        <button
+          aria-label="Zpět"
+          onClick={() => (history.length > 1 ? history.back() : navigate('home'))}
+          className="size-10 -ml-2 grid place-items-center rounded-xl text-muted hover:text-fg hover:bg-surface-2"
+        >
+          <ArrowLeft className="size-5" />
+        </button>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl font-bold tracking-tight leading-tight truncate">{title}</h1>
+          {subtitle && <div className="text-xs text-muted truncate">{subtitle}</div>}
+        </div>
+        {right}
       </div>
-      {right}
+      {below}
     </div>
   );
 }
