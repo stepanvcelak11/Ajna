@@ -74,7 +74,7 @@ export function useSpeechRecognition() {
         wantRef.current = false;
         setError('Mikrofon není povolen. Povol ho v prohlížeči (ikona zámku u adresy).');
       } else if (e.error === 'network') {
-        setError('Rozpoznávání řeči potřebuje internet.');
+        setError('Rozpoznávání řeči tady potřebuje internet. Offline odpověď napiš (nebo použij diktování klávesnice).');
       } else {
         setError(`Chyba mikrofonu: ${e.error}`);
       }

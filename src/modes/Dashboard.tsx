@@ -1,10 +1,11 @@
-import { AlertTriangle, BookOpen, Flame, KeyRound, Layers, MessageCircle, Mic, Repeat2, Timer } from 'lucide-react';
+import { AlertTriangle, BookOpen, Flame, KeyRound, Layers, MessageCircle, Mic, Repeat2, Timer, WifiOff } from 'lucide-react';
 import { TRAP_LABELS } from '../components/FeedbackCard';
 import { Card, Label, cx } from '../components/ui';
 import { hasKey } from '../lib/llm';
 import { navigate, type Route } from '../lib/router';
 import { isDue } from '../lib/srs';
 import { streak, todayKey, topTraps, useStore } from '../lib/store';
+import { useOnline } from '../lib/ui';
 
 const MODES: { route: Route; letter: string; title: string; cz: string; icon: typeof Mic; color: string }[] = [
   { route: 'ladder', letter: 'A', title: 'Nabalování vět', cz: 'Stavěj složité věty krok po kroku', icon: Layers, color: 'text-violet-400 bg-violet-500/10' },
@@ -19,6 +20,7 @@ export default function Dashboard() {
   const vocab = useStore((s) => s.vocab);
   const mistakes = useStore((s) => s.mistakes);
   useStore((s) => s.settings);
+  const online = useOnline();
   const today = days[todayKey()] ?? { words: 0, answers: 0 };
   const st = streak(days);
   const vocabDue = vocab.filter((v) => isDue(v.srs.dueDate)).length;
@@ -45,7 +47,7 @@ export default function Dashboard() {
           <KeyRound className="size-5 text-accent" />
           <div className="text-sm flex-1">
             <div className="font-medium">Nastav API klíč</div>
-            <div className="text-xs text-muted">OpenAI nebo Anthropic – uložen jen v tomto zařízení.</div>
+            <div className="text-xs text-muted">Gemini (zdarma), Claude nebo OpenAI – uložen jen v tomto zařízení.</div>
           </div>
         </Card>
       )}
@@ -137,6 +139,11 @@ export default function Dashboard() {
                 </div>
                 <div className="text-xs text-muted truncate">{m.cz}</div>
               </div>
+              {!online && m.route !== 'vocab-review' && (
+                <span className="inline-flex items-center gap-1 text-[10px] text-muted">
+                  <WifiOff className="size-3" /> online
+                </span>
+              )}
               {m.route === 'vocab-review' && vocabDue > 0 && (
                 <span className="rounded-full bg-pink-500/15 text-pink-400 text-[11px] px-2 py-0.5 tabular-nums">{vocabDue}</span>
               )}

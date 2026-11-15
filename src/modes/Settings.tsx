@@ -1,11 +1,54 @@
-import { Download, Eye, EyeOff, Moon, Sun, Upload } from 'lucide-react';
+import { Download, ExternalLink, Eye, EyeOff, Moon, Sun, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { SpeakButton } from '../components/Speak';
 import { Btn, Card, Label, cx } from '../components/ui';
-import { ANTHROPIC_MODELS, OPENAI_MODELS } from '../lib/llm';
+import { ANTHROPIC_MODELS, GEMINI_MODELS, OPENAI_MODELS, listGeminiModels } from '../lib/llm';
 import { sttSupported } from '../lib/speech';
 import { exportJson, importJson, resetAll, updateSettings, useStore } from '../lib/store';
-import type { Settings as S } from '../lib/types';
+import type { Provider, Settings as S } from '../lib/types';
+
+const KEY_FIELD = { openai: 'openaiKey', anthropic: 'anthropicKey', gemini: 'geminiKey' } as const satisfies Record<Provider, keyof S>;
+const MODEL_FIELD = { openai: 'openaiModel', anthropic: 'anthropicModel', gemini: 'geminiModel' } as const satisfies Record<Provider, keyof S>;
+
+const KEY_HELP: Record<Provider, { name: string; steps: string[]; url: string; urlLabel: string; host: string; placeholder: string; modelNote: string }> = {
+  gemini: {
+    name: 'Google Gemini – zdarma',
+    steps: [
+      'Otevři Google AI Studio a přihlas se svým Google účtem.',
+      'Klikni na „Create API key“ (Vytvořit klíč).',
+      'Klíč (začíná „AIza…“) zkopíruj a vlož sem.',
+      'Předplatné Gemini v aplikaci není potřeba – klíč z AI Studia má bezplatný limit, který na trénink stačí.',
+    ],
+    url: 'https://aistudio.google.com/apikey',
+    urlLabel: 'Google AI Studio',
+    host: 'generativelanguage.googleapis.com',
+    placeholder: 'AIza…',
+    modelNote: 'Flash = rychlý a v bezplatném limitu. Po vložení klíče se načtou modely, které máš k dispozici.',
+  },
+  anthropic: {
+    name: 'Anthropic Claude – placené',
+    steps: [
+      'Otevři Claude Console a přihlas se (nebo si vytvoř účet).',
+      'V Settings → Billing dobij kredit (např. 5 $). Předplatné Claude Pro/Max se na API nevztahuje.',
+      'V Settings → API Keys klikni „Create Key“.',
+      'Klíč (začíná „sk-ant-…“) zkopíruj a vlož sem – ukáže se jen jednou.',
+    ],
+    url: 'https://console.anthropic.com/settings/keys',
+    urlLabel: 'Claude Console',
+    host: 'api.anthropic.com',
+    placeholder: 'sk-ant-…',
+    modelNote: 'Haiku = nejrychlejší a nejlevnější, Sonnet = vyvážený, Opus = nejchytřejší.',
+  },
+  openai: {
+    name: 'OpenAI – placené',
+    steps: ['Otevři OpenAI Platform a přihlas se.', 'V Billing dobij kredit.', 'V API keys klikni „Create new secret key“ a vlož ho sem.'],
+    url: 'https://platform.openai.com/api-keys',
+    urlLabel: 'OpenAI Platform',
+    host: 'api.openai.com',
+    placeholder: 'sk-…',
+    modelNote: 'gpt-4o-mini = rychlý a levný, gpt-4o = přesnější.',
+  },
+};
 import { toast } from '../lib/ui';
 
 function Seg<T extends string | number>({ value, options, onChange }: { value: T; options: { v: T; label: string }[]; onChange: (v: T) => void }) {
@@ -55,10 +98,32 @@ export default function Settings() {
   const [show, setShow] = useState(false);
   const file = useRef<HTMLInputElement>(null);
   const set = (p: Partial<S>) => updateSettings(p);
-  const keyField = s.provider === 'openai' ? 'openaiKey' : 'anthropicKey';
-  const models = s.provider === 'openai' ? OPENAI_MODELS : ANTHROPIC_MODELS;
-  const modelField = s.provider === 'openai' ? 'openaiModel' : 'anthropicModel';
+  const keyField = KEY_FIELD[s.provider];
+  const modelField = MODEL_FIELD[s.provider];
+  const [geminiModels, setGeminiModels] = useState<string[]>([]);
+  const [loadingModels, setLoadingModels] = useState(false);
+  const models = s.provider === 'openai' ? OPENAI_MODELS : s.provider === 'gemini' ? (geminiModels.length ? geminiModels.slice(0, 8) : GEMINI_MODELS) : ANTHROPIC_MODELS;
   const custom = !models.includes(s[modelField]);
+  const help = KEY_HELP[s.provider];
+
+  const loadGeminiModels = async () => {
+    if (!s.geminiKey.trim()) return;
+    setLoadingModels(true);
+    try {
+      const list = await listGeminiModels(s.geminiKey);
+      setGeminiModels(list);
+      if (list.length && !list.includes(s.geminiModel)) {
+        // prefer the newest stable Flash model: fast, cheap and with a generous free tier
+        const pick = list.find((m) => /^gemini-[\d.]+-flash$/.test(m)) ?? list.find((m) => m.includes('flash')) ?? list[0];
+        set({ geminiModel: pick });
+      }
+      toast(`Načteno ${list.length} modelů`);
+    } catch (e) {
+      toast((e as Error).message);
+    } finally {
+      setLoadingModels(false);
+    }
+  };
 
   const doExport = () => {
     const blob = new Blob([exportJson()], { type: 'application/json' });
@@ -87,11 +152,23 @@ export default function Settings() {
         <Seg
           value={s.provider}
           options={[
-            { v: 'anthropic', label: 'Anthropic (Claude)' },
+            { v: 'gemini', label: 'Gemini' },
+            { v: 'anthropic', label: 'Claude' },
             { v: 'openai', label: 'OpenAI' },
           ]}
           onChange={(v) => set({ provider: v })}
         />
+        <div className="rounded-xl border border-line bg-surface-2 p-3 text-xs space-y-1.5">
+          <div className="font-medium text-fg">Jak získat klíč ({help.name})</div>
+          <ol className="list-decimal pl-4 space-y-0.5 text-muted">
+            {help.steps.map((x) => (
+              <li key={x}>{x}</li>
+            ))}
+          </ol>
+          <a href={help.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-accent font-medium">
+            Otevřít {help.urlLabel} <ExternalLink className="size-3" />
+          </a>
+        </div>
         <div>
           <div className="text-xs text-muted mb-1">API klíč</div>
           <div className="relative">
@@ -99,7 +176,8 @@ export default function Settings() {
               type={show ? 'text' : 'password'}
               value={s[keyField]}
               onChange={(e) => set({ [keyField]: e.target.value } as Partial<S>)}
-              placeholder={s.provider === 'openai' ? 'sk-…' : 'sk-ant-…'}
+              onBlur={() => s.provider === 'gemini' && !geminiModels.length && loadGeminiModels()}
+              placeholder={help.placeholder}
               autoComplete="off"
               spellCheck={false}
               className="w-full h-11 rounded-xl border border-line bg-surface-2 px-3 pr-11 text-[16px] font-mono outline-none focus:border-accent/60"
@@ -109,12 +187,18 @@ export default function Settings() {
             </button>
           </div>
           <div className="text-[11px] text-muted mt-1">
-            Klíč zůstává jen v tomto prohlížeči (localStorage) a posílá se přímo na {s.provider === 'openai' ? 'api.openai.com' : 'api.anthropic.com'}. Neexportuje se
-            do zálohy.
+            Klíč zůstává jen v tomto zařízení a posílá se přímo na {help.host}. Do zálohy se neexportuje.
           </div>
         </div>
         <div>
-          <div className="text-xs text-muted mb-1">Model</div>
+          <div className="flex items-center justify-between mb-1">
+            <div className="text-xs text-muted">Model</div>
+            {s.provider === 'gemini' && (
+              <button onClick={loadGeminiModels} disabled={!s.geminiKey.trim() || loadingModels} className="text-[11px] text-accent disabled:opacity-40">
+                {loadingModels ? 'Načítám…' : 'Načíst dostupné modely'}
+              </button>
+            )}
+          </div>
           <div className="flex flex-wrap gap-1.5">
             {models.map((m) => (
               <button
@@ -132,11 +216,7 @@ export default function Settings() {
             placeholder="…nebo vlastní ID modelu"
             className="mt-2 w-full h-10 rounded-xl border border-line bg-surface-2 px-3 text-sm font-mono outline-none focus:border-accent/60"
           />
-          <div className="text-[11px] text-muted mt-1">
-            {s.provider === 'anthropic'
-              ? 'Haiku = nejrychlejší a nejlevnější, Sonnet = vyvážený, Opus = nejchytřejší. (Modely Claude 3.5 už nejsou dostupné.)'
-              : 'gpt-4o-mini = rychlý a levný, gpt-4o = přesnější.'}
-          </div>
+          <div className="text-[11px] text-muted mt-1">{help.modelNote}</div>
         </div>
       </Card>
 

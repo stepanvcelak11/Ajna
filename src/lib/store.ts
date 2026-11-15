@@ -5,11 +5,13 @@ import { newSrs } from './srs';
 const KEY = 'ajna-state-v1';
 
 export const defaultSettings: Settings = {
-  provider: 'anthropic',
+  provider: 'gemini',
   openaiKey: '',
   anthropicKey: '',
+  geminiKey: '',
   openaiModel: 'gpt-4o-mini',
   anthropicModel: 'claude-sonnet-5-5',
+  geminiModel: 'gemini-2.5-flash',
   accent: 'en-US',
   theme: 'dark',
   ttsRate: 1,
@@ -173,7 +175,7 @@ export function topTraps(mistakes: Mistake[], n = 3) {
 export function exportJson() {
   const { settings, ...rest } = state;
   // never export API keys
-  const safe = { ...rest, settings: { ...settings, openaiKey: '', anthropicKey: '' } };
+  const safe = { ...rest, settings: { ...settings, openaiKey: '', anthropicKey: '', geminiKey: '' } };
   return JSON.stringify({ ...safe, exportedAt: new Date().toISOString() }, null, 2);
 }
 
@@ -181,7 +183,7 @@ export function importJson(text: string) {
   const parsed = normalize(JSON.parse(text));
   setState((s) => ({
     ...parsed,
-    settings: { ...parsed.settings, openaiKey: s.settings.openaiKey, anthropicKey: s.settings.anthropicKey },
+    settings: { ...parsed.settings, openaiKey: s.settings.openaiKey, anthropicKey: s.settings.anthropicKey, geminiKey: s.settings.geminiKey },
   }));
 }
 

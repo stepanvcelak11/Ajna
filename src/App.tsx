@@ -1,11 +1,11 @@
-import { AlertCircle, BookOpen, Home, Settings as Cog } from 'lucide-react';
+import { AlertCircle, BookOpen, Home, Settings as Cog, WifiOff } from 'lucide-react';
 import { useEffect, type ComponentType } from 'react';
 import { WordRescue } from './components/WordRescue';
 import { cx } from './components/ui';
 import { navigate, useRoute, type Route } from './lib/router';
 import { isDue } from './lib/srs';
 import { useStore } from './lib/store';
-import { isTypingTarget, runAction, useUi } from './lib/ui';
+import { isTypingTarget, runAction, useOnline, useUi } from './lib/ui';
 import Dashboard from './modes/Dashboard';
 import Drill from './modes/Drill';
 import Ladder from './modes/Ladder';
@@ -43,6 +43,7 @@ export default function App() {
   const vocab = useStore((s) => s.vocab);
   const mistakes = useStore((s) => s.mistakes);
   const toastMsg = useUi((s) => s.toast);
+  const online = useOnline();
   const Screen = SCREENS[route];
 
   useEffect(() => {
@@ -74,6 +75,12 @@ export default function App() {
         key={route}
         className="mx-auto max-w-xl px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(6rem+env(safe-area-inset-bottom))] animate-fade"
       >
+        {!online && (
+          <div className="mb-4 flex items-center gap-2 rounded-xl border border-line bg-surface-2 px-3 py-2 text-xs text-muted">
+            <WifiOff className="size-3.5 shrink-0" />
+            Offline režim – slovíčka, Banka chyb a výslovnost fungují, AI hodnocení počká na internet.
+          </div>
+        )}
         <Screen />
       </main>
 

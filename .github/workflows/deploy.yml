@@ -25,6 +25,8 @@ jobs:
         with:
           path: dist
   deploy:
+    # GitHub Pages only accepts deploys from the repository's default branch.
+    if: github.ref_name == github.event.repository.default_branch
     needs: build
     runs-on: ubuntu-latest
     environment:

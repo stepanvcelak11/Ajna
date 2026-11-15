@@ -2,8 +2,8 @@
 
 A mobile-first app (installable PWA) for a Czech B1 learner who understands English but freezes when speaking.
 It trains active sentence building, speaking aloud and vocabulary in context. Everything runs in the browser:
-no backend, data lives in `localStorage`, and AI calls go straight from the browser to OpenAI or Anthropic with
-your own API key.
+no backend, data lives in `localStorage`, and AI calls go straight from the browser to Google Gemini (free key from
+https://aistudio.google.com/apikey), Anthropic Claude or OpenAI, using your own API key.
 
 ## Modes
 - **A · Nabalování vět**: a sentence-expansion ladder (core sentence → add a reason → add a contrast), with AI feedback on the final multi-clause sentence.
@@ -20,6 +20,12 @@ your own API key.
 - **Toggle** (tap to start/stop) or **Push-to-talk** (hold the button or Space). US/UK accent.
 - The transcript stays editable before you submit. TTS on every example at 0.8× or 1.0×.
 - Best support: **Chrome on Android**, **Safari on iOS** (14.5+). The microphone needs **HTTPS** (or localhost).
+
+## Offline
+After the first visit, the whole app is stored on the device (service worker), so it opens and works without internet.
+The dashboard, vocabulary list, mistake bank, pronunciation (TTS) and vocabulary review work offline; in vocabulary review
+you grade your own sentence instead of the AI. AI feedback (modes A–D, the AI check in vocabulary step 2, mistake practice)
+needs a connection. Speech recognition in Chrome also needs internet; offline you can type, or use your keyboard's dictation.
 
 ## Keyboard (desktop)
 Space = record / push-to-talk · Enter = submit · R = replay native version · S = save to the mistake bank · Ctrl+K = Word Rescue

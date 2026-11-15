@@ -1,4 +1,4 @@
-export type Provider = 'openai' | 'anthropic';
+export type Provider = 'openai' | 'anthropic' | 'gemini';
 export type Accent = 'en-US' | 'en-GB';
 export type MicMode = 'toggle' | 'ptt';
 
@@ -6,8 +6,10 @@ export interface Settings {
   provider: Provider;
   openaiKey: string;
   anthropicKey: string;
+  geminiKey: string;
   openaiModel: string;
   anthropicModel: string;
+  geminiModel: string;
   accent: Accent;
   theme: 'dark' | 'light';
   ttsRate: 0.8 | 1;

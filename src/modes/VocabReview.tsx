@@ -5,6 +5,8 @@ import { MicRecorder } from '../components/MicRecorder';
 import { SpeakButton } from '../components/Speak';
 import { Btn, Card, ErrorBox, ExampleText, Label, ModeHeader, Spinner, cx } from '../components/ui';
 import { evaluate } from '../lib/ai';
+import { hasKey } from '../lib/llm';
+import { useOnline } from '../lib/ui';
 import { navigate } from '../lib/router';
 import { formatInterval, isDue, review } from '../lib/srs';
 import { getState, setState } from '../lib/store';
@@ -76,6 +78,10 @@ export default function VocabReview() {
   const [err, setErr] = useState<string | null>(null);
   const [stats, setStats] = useState({ pass: 0, fail: 0 });
   const [attempt, setAttempt] = useState(0);
+  const [selfCheck, setSelfCheck] = useState<string | null>(null);
+  const online = useOnline();
+  // Without internet (or without an API key) step 2 is self-graded.
+  const aiAvailable = online && hasKey();
   const card = queue[i];
 
   const next = () => {
@@ -85,6 +91,7 @@ export default function VocabReview() {
     setEv(null);
     setErr(null);
     setAttempt(0);
+    setSelfCheck(null);
   };
 
   const finish = (q: number) => {
@@ -220,7 +227,41 @@ export default function VocabReview() {
                 Řekni <b>úplně novou</b> vlastní větu s výrazem <span className="text-accent font-semibold">{card.en}</span>.
               </div>
             </Card>
-            {!ev && <MicRecorder resetKey={`${card.id}-2-${attempt}`} onSubmit={submitSentence} busy={busy} />}
+            {!ev && !selfCheck && (
+              <MicRecorder
+                resetKey={`${card.id}-2-${attempt}`}
+                onSubmit={(t) => (aiAvailable ? submitSentence(t) : setSelfCheck(t))}
+                busy={busy}
+                submitLabel={aiAvailable ? 'Vyhodnotit' : 'Hotovo'}
+              />
+            )}
+            {selfCheck && (
+              <Card className="space-y-3 animate-up">
+                <Label>Offline · ohodnoť se sám</Label>
+                <div className="text-sm">“{selfCheck}”</div>
+                <div className="flex items-start gap-2 text-sm text-muted">
+                  <div className="flex-1">
+                    Vzor: <ExampleText text={card.example} />
+                    {card.collocation && <div className="text-xs mt-1">Vazba: {card.collocation}</div>}
+                  </div>
+                  <SpeakButton text={card.example} compact />
+                </div>
+                <div className="text-xs text-muted">Použil jsi „{card.en}“ přirozeně a se správnou předložkou/vazbou?</div>
+                <div className="grid grid-cols-4 gap-2">
+                  {[1, ...previews.map((p) => p.q).reverse()].map((q) => (
+                    <Btn
+                      key={q}
+                      variant={q === 4 ? 'primary' : 'secondary'}
+                      className="flex-col h-14 gap-0 px-1 text-xs"
+                      onClick={() => finish(recall?.ok ? q : Math.min(q, 2))}
+                    >
+                      <span>{q === 1 ? 'Znovu' : q === 3 ? 'Těžké' : q === 4 ? 'Dobré' : 'Snadné'}</span>
+                      <span className="text-[10px] opacity-70">{formatInterval(review(card.srs, recall?.ok ? q : Math.min(q, 2)).interval)}</span>
+                    </Btn>
+                  ))}
+                </div>
+              </Card>
+            )}
             {busy && <Spinner label="Hodnotím použití…" />}
             {err && <ErrorBox error={err} />}
             {ev && (

@@ -5,10 +5,13 @@ export class LlmError extends Error {}
 export const OPENAI_MODELS = ['gpt-4o-mini', 'gpt-4o'];
 // Current Anthropic generation (the 3.5 models are retired).
 export const ANTHROPIC_MODELS = ['claude-haiku-5-5', 'claude-sonnet-5-5', 'claude-opus-5-5'];
+// Shown until the real list is fetched for the user's key.
+export const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.5-pro'];
 
 export function hasKey() {
   const s = getState().settings;
-  return s.provider === 'openai' ? !!s.openaiKey.trim() : !!s.anthropicKey.trim();
+  const key = s.provider === 'openai' ? s.openaiKey : s.provider === 'gemini' ? s.geminiKey : s.anthropicKey;
+  return !!key?.trim();
 }
 
 /** Minimal JSON-schema description we pass to both providers. */
@@ -106,6 +109,46 @@ async function callAnthropic({ system, user, schema, maxTokens = 2500, signal }:
   return extractJson(text);
 }
 
+const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta';
+
+async function callGemini({ system, user, schema, maxTokens = 2500, signal }: CallOpts) {
+  const s = getState().settings;
+  const model = (s.geminiModel || 'gemini-2.5-flash').replace(/^models\//, '');
+  const res = await fetch(`${GEMINI_BASE}/models/${encodeURIComponent(model)}:generateContent`, {
+    method: 'POST',
+    signal,
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': s.geminiKey.trim() },
+    body: JSON.stringify({
+      systemInstruction: {
+        parts: [{ text: `${system}\n\nRespond ONLY with a JSON object matching this JSON Schema:\n${JSON.stringify(schema)}` }],
+      },
+      contents: [{ role: 'user', parts: [{ text: user }] }],
+      generationConfig: { responseMimeType: 'application/json', maxOutputTokens: Math.max(maxTokens, 4000) },
+    }),
+  });
+  if (!res.ok) throw new LlmError(await errText(res));
+  const data = await res.json();
+  const cand = data.candidates?.[0];
+  if (!cand) throw new LlmError('Gemini nevrátil odpověď (možná zablokováno filtrem). Zkus to znovu.');
+  const text = (cand.content?.parts ?? [])
+    .filter((p: { thought?: boolean }) => !p.thought)
+    .map((p: { text?: string }) => p.text ?? '')
+    .join('');
+  return extractJson(text);
+}
+
+/** Lists Gemini models usable with generateContent for this key (newest first). */
+export async function listGeminiModels(key: string): Promise<string[]> {
+  const res = await fetch(`${GEMINI_BASE}/models?pageSize=200`, { headers: { 'x-goog-api-key': key.trim() } });
+  if (!res.ok) throw new LlmError(await errText(res));
+  const data = await res.json();
+  return (data.models ?? [])
+    .filter((m: { supportedGenerationMethods?: string[] }) => m.supportedGenerationMethods?.includes('generateContent'))
+    .map((m: { name: string }) => m.name.replace(/^models\//, ''))
+    .filter((n: string) => /^gemini-/.test(n) && !/(image|tts|audio|embedding|live|vision|computer)/.test(n))
+    .sort((a: string, b: string) => b.localeCompare(a, undefined, { numeric: true }));
+}
+
 async function errText(res: Response) {
   let detail = '';
   try {
@@ -114,14 +157,24 @@ async function errText(res: Response) {
   } catch {
     detail = res.statusText;
   }
-  if (res.status === 401) return 'Neplatný API klíč (401). Zkontroluj Nastavení.';
+  if (res.status === 401 || res.status === 403 || /API key not valid/i.test(detail)) return 'Neplatný API klíč. Zkontroluj Nastavení.';
+  if (res.status === 404) return `Model nenalezen (404). Vyber v Nastavení jiný model. ${detail}`;
   if (res.status === 429) return 'Překročen limit / kredit (429). Počkej chvíli nebo zkontroluj účet.';
   return `API chyba ${res.status}: ${detail}`;
 }
 
+export const OFFLINE_MSG = 'Jsi offline. AI hodnocení potřebuje internet – slovíčka a Banku chyb můžeš procházet i bez něj.';
+
 export async function callJson<T>(opts: CallOpts): Promise<T> {
   if (!hasKey()) throw new LlmError('Chybí API klíč. Přidej ho v Nastavení.');
+  if (!navigator.onLine) throw new LlmError(OFFLINE_MSG);
   const s = getState().settings;
-  const out = s.provider === 'openai' ? await callOpenAI(opts) : await callAnthropic(opts);
-  return out as T;
+  try {
+    const out =
+      s.provider === 'openai' ? await callOpenAI(opts) : s.provider === 'gemini' ? await callGemini(opts) : await callAnthropic(opts);
+    return out as T;
+  } catch (e) {
+    if (e instanceof TypeError) throw new LlmError(navigator.onLine ? 'Nepodařilo se spojit s AI. Zkontroluj připojení.' : OFFLINE_MSG);
+    throw e;
+  }
 }
