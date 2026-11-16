@@ -28,6 +28,9 @@ const Builder = lazy(() => import('./modes/Builder'));
 const Listen = lazy(() => import('./modes/Listen'));
 const Match = lazy(() => import('./modes/Match'));
 const Progress = lazy(() => import('./modes/Progress'));
+const Grammar = lazy(() => import('./modes/Grammar'));
+const Placement = lazy(() => import('./modes/Placement'));
+const Stories = lazy(() => import('./modes/Stories'));
 import { Confetti } from './components/Confetti';
 import { BadgeWatcher } from './components/BadgeWatcher';
 
@@ -49,10 +52,13 @@ const SCREENS: Record<Route, ComponentType> = {
   listen: Listen,
   match: Match,
   progress: Progress,
+  grammar: Grammar,
+  placement: Placement,
+  stories: Stories,
 };
 
 const TABS: { route: Route; label: string; icon: typeof Home; match: Route[] }[] = [
-  { route: 'home', label: 'Trénink', icon: Home, match: ['home', 'ladder', 'drill', 'monologue', 'roleplay', 'sprint', 'quiz', 'builder', 'listen', 'match', 'progress'] },
+  { route: 'home', label: 'Trénink', icon: Home, match: ['home', 'ladder', 'drill', 'monologue', 'roleplay', 'sprint', 'quiz', 'builder', 'listen', 'match', 'progress', 'grammar', 'placement', 'stories'] },
   { route: 'course', label: 'Učebnice', icon: GraduationCap, match: ['course'] },
   { route: 'vocab', label: 'Slovíčka', icon: BookOpen, match: ['vocab', 'vocab-review'] },
   { route: 'mistakes', label: 'Chyby', icon: AlertCircle, match: ['mistakes', 'mistake-practice'] },

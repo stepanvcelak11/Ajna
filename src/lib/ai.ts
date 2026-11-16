@@ -339,3 +339,42 @@ but with completely different vocabulary and situation. target_structure: short 
     schema: obj({ prompt_cz: str, target_structure: str }),
   });
 }
+
+// ---------- Stories: graded reading + listening + comprehension ----------
+export interface Story {
+  title: string;
+  title_cz: string;
+  sentences: { en: string; cz: string }[];
+  questions: { q: string; options: string[]; a: number }[];
+  retell_cz: string;
+}
+
+export async function generateStory(topic: string): Promise<Story> {
+  const { level, who } = lvl();
+  const n = level.id <= 1 ? 6 : level.id === 2 ? 8 : 10;
+  const st = await callJson<Story>({
+    system: `You write short graded reading stories in English for ${who}.`,
+    user: `Topic: ${topic}.
+Write a short, concrete, slightly funny or interesting everyday story with ${n} sentences.
+LANGUAGE LEVEL: ${level.sentences}
+Each sentence at most ${Math.max(8, level.maxWords + 4)} words. Use mostly the grammar typical for this level: ${level.grammar.map((g) => g.en).join('; ')}.
+Natural English a native speaker would write; a clear beginning, a small problem and an ending.
+- title: short English title; title_cz: Czech translation of the title.
+- sentences: [{en, cz}] where cz is a natural Czech translation of that sentence.
+- questions: 3 comprehension questions in simple English, each with 3 short options and "a" = index of the correct option. Answers must be clearly in the text.
+- retell_cz: Czech instruction asking the learner to retell the story in ${level.id <= 2 ? '2-3 short' : '3-5'} English sentences.`,
+    schema: obj({
+      title: str,
+      title_cz: str,
+      sentences: arr(obj({ en: str, cz: str })),
+      questions: arr(obj({ q: str, options: arr(str), a: { type: 'integer' } })),
+      retell_cz: str,
+    }),
+    maxTokens: 3000,
+  });
+  return {
+    ...st,
+    sentences: (st.sentences ?? []).filter((s) => s?.en),
+    questions: (st.questions ?? []).filter((q) => q?.options?.length >= 2 && q.a >= 0 && q.a < q.options.length),
+  };
+}

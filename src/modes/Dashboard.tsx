@@ -15,7 +15,8 @@ import { useOnline } from '../lib/ui';
 
 type ModeDef = { route: Route; title: string; desc: string; icon: IconName; tone: Tone; offline?: boolean };
 
-const SPEAK_MODES: ModeDef[] = [
+const SPEAK_MODES: (ModeDef & { wide?: boolean })[] = [
+  { route: 'stories', title: 'Příběhy', desc: 'Čti a poslouchej příběh, odpověz na otázky a převyprávěj ho', icon: 'book', tone: 'teal', offline: true, wide: true },
   { route: 'drill', title: 'Překlad vět', desc: 'Česká věta → řekni ji anglicky', icon: 'swap', tone: 'sky' },
   { route: 'ladder', title: 'Nabalování vět', desc: 'Od krátké věty po složitou', icon: 'ladder', tone: 'violet' },
   { route: 'monologue', title: 'Monolog', desc: 'Mluv volně, dostaneš rodilou verzi', icon: 'mic', tone: 'emerald' },
@@ -34,6 +35,7 @@ const GAMES: { route: Route; title: string; desc: string; icon: IconName; bg: st
   { route: 'builder', title: 'Skládání vět', desc: 'Správný slovosled', icon: 'layers', bg: 'from-sky-500 to-blue-600', id: 'builder' },
   { route: 'listen', title: 'Poslech', desc: 'Slyšíš a opakuješ', icon: 'chat', bg: 'from-emerald-500 to-teal-600', id: 'listen' },
   { route: 'match', title: 'Párování', desc: 'Spoj dvojice na čas', icon: 'sparkle', bg: 'from-pink-500 to-fuchsia-600', id: 'match' },
+  { route: 'grammar', title: 'Gramatika', desc: 'Doplň správný tvar, s vysvětlením česky', icon: 'book', bg: 'from-amber-500 to-orange-600', id: 'grammar' },
 ];
 
 // The AI exercise of the day rotates so every day feels a bit different.
@@ -49,6 +51,7 @@ const DAILY_GAMES: { route: Route; title: string; target: number; icon: IconName
   { route: 'builder', title: 'Slož 8 vět', target: 8, icon: 'layers', tone: 'sky' },
   { route: 'listen', title: 'Poslech: 8 vět', target: 8, icon: 'chat', tone: 'emerald' },
   { route: 'match', title: 'Párování (3 tabule)', target: 15, icon: 'sparkle', tone: 'pink' },
+  { route: 'grammar', title: 'Gramatika: 10 otázek', target: 10, icon: 'book', tone: 'amber' },
 ];
 
 interface Task {
@@ -213,6 +216,11 @@ export default function Dashboard() {
             </span>
             <span className="text-xs font-medium text-accent">Změnit</span>
           </button>
+          <button onClick={() => navigate('placement')} className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-xs">
+            <Icon name="target" className="size-4 text-accent" />
+            <span className="flex-1 text-muted">Nevíš, která úroveň ti sedí? Udělej si rozřazovací test (2 min).</span>
+            <ChevronRight className="size-4 text-muted" />
+          </button>
 
           <div className="flex items-center gap-3 p-4">
             {lesson ? (
@@ -289,14 +297,14 @@ export default function Dashboard() {
                 className={cx(
                   'relative overflow-hidden rounded-2xl bg-gradient-to-br p-3.5 text-left text-white shadow-md transition active:scale-[0.98]',
                   g.bg,
-                  n === 0 && 'col-span-2 flex items-center gap-3',
+                  (n === 0 || (n === GAMES.length - 1 && GAMES.length % 2 === 0)) && 'col-span-2 flex items-center gap-3',
                 )}
               >
                 <span className="pointer-events-none absolute -right-5 -top-6 size-20 rounded-full bg-white/15" />
                 <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-white/20">
                   <Icon name={g.icon} className="size-6" />
                 </span>
-                <span className={cx('block', n !== 0 && 'mt-3')}>
+                <span className={cx('block', !(n === 0 || (n === GAMES.length - 1 && GAMES.length % 2 === 0)) && 'mt-3')}>
                   <span className="block text-sm font-bold leading-tight">{g.title}</span>
                   <span className="mt-0.5 block text-xs leading-snug text-white/80">{g.desc}</span>
                 </span>
@@ -313,10 +321,12 @@ export default function Dashboard() {
 
       {/* --- AI speaking --- */}
       <section>
-        <Label className="mb-2">Mluvení s AI</Label>
+        <Label className="mb-2">Mluvení a čtení s AI</Label>
         <div className="grid grid-cols-2 gap-3">
           {SPEAK_MODES.map((m) => (
-            <ModeCard key={m.route} m={m} badge={badge[m.route]} offline={!online} />
+            <div key={m.route} className={cx(m.wide && 'col-span-2')}>
+              <ModeCard m={m} badge={badge[m.route]} offline={!online} wide={m.wide} />
+            </div>
           ))}
         </div>
       </section>
@@ -458,12 +468,14 @@ function Hero() {
   );
 }
 
-function ModeCard({ m, badge, offline }: { m: ModeDef; badge?: number; offline: boolean }) {
+function ModeCard({ m, badge, offline, wide }: { m: ModeDef; badge?: number; offline: boolean; wide?: boolean }) {
   return (
-    <Card onClick={() => navigate(m.route)} className="relative p-3.5 hover:border-accent/40">
+    <Card onClick={() => navigate(m.route)} className={cx('relative h-full p-3.5 hover:border-accent/40', wide && 'flex items-center gap-3')}>
       <IconTile name={m.icon} tone={m.tone} />
-      <div className="mt-3 text-sm font-semibold leading-tight">{m.title}</div>
-      <div className="mt-0.5 text-xs leading-snug text-muted">{m.desc}</div>
+      <div className={cx(wide ? 'min-w-0 flex-1' : 'mt-3')}>
+        <div className="text-sm font-semibold leading-tight">{m.title}</div>
+        <div className="mt-0.5 text-xs leading-snug text-muted">{m.desc}</div>
+      </div>
       {!!badge && (
         <span className="absolute right-3 top-3 grid h-6 min-w-6 place-items-center rounded-full bg-accent px-1.5 text-[11px] font-semibold tabular-nums text-white">
           {badge}

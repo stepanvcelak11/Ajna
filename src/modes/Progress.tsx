@@ -5,7 +5,7 @@ import { Card, Label, ModeHeader, cx } from '../components/ui';
 import { BADGES } from '../data/achievements';
 import { dayXp, rankOf, streak, todayKey, totalXp, useStore } from '../lib/store';
 
-const GAME_NAMES: Record<string, string> = { quiz: 'Kvíz', builder: 'Skládání vět', listen: 'Poslech', match: 'Párování' };
+const GAME_NAMES: Record<string, string> = { quiz: 'Kvíz', builder: 'Skládání vět', listen: 'Poslech', match: 'Párování', grammar: 'Gramatika' };
 const fmtTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
 export default function Progress() {

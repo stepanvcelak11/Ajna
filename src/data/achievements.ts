@@ -18,7 +18,7 @@ const wordsSpoken = (s: AppState) => sum(days(s), (d) => d.words);
 const goalDays = (s: AppState) => days(s).filter((d) => dayXp(d) >= s.settings.dailyGoal).length;
 const phrasesKnown = (s: AppState) => Object.values(s.phraseStats).filter((p) => p.ok > p.fail).length;
 const game = (s: AppState, id: string) => s.games[id] ?? { plays: 0, best: 0, correct: 0 };
-const EXPLORE = ['drill', 'ladder', 'monologue', 'roleplay', 'sprint', 'quiz', 'builder', 'listen', 'match', 'vocab-review'];
+const EXPLORE = ['drill', 'ladder', 'monologue', 'roleplay', 'sprint', 'quiz', 'builder', 'listen', 'match', 'grammar', 'stories', 'vocab-review'];
 const explored = (s: AppState) => {
   const seen = new Set<string>();
   for (const d of days(s)) for (const k of Object.keys(d.modes ?? {})) seen.add(k);
@@ -50,6 +50,15 @@ export const BADGES: Badge[] = [
     icon: 'bolt',
     tone: 'lime',
     progress: (s) => [game(s, 'match').bestTime !== undefined && game(s, 'match').bestTime! <= 60 ? 1 : 0, 1],
+  },
+  { id: 'grammar50', title: 'Gramatik', desc: '50 správných odpovědí v Gramatice', icon: 'book', tone: 'amber', progress: (s) => [game(s, 'grammar').correct, 50] },
+  {
+    id: 'reader',
+    title: 'Čtenář',
+    desc: 'Odpověz na 15 otázek k příběhům',
+    icon: 'book',
+    tone: 'teal',
+    progress: (s) => [Object.values(s.days).reduce((n, d) => n + (d.modes?.stories ?? 0), 0), 15],
   },
   { id: 'explorer', title: 'Průzkumník', desc: `Vyzkoušej všech ${EXPLORE.length} cvičení`, icon: 'target', tone: 'slate', progress: (s) => [explored(s), EXPLORE.length] },
 ];
