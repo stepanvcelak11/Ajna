@@ -30,7 +30,7 @@ export const defaultSettings: Settings = {
 };
 
 function initial(): AppState {
-  return { version: 1, settings: { ...defaultSettings }, vocab: [], mistakes: [], days: {}, addedPacks: [], levelLog: [], phraseStats: {}, games: {}, badgesSeen: [], wordle: null, path: {} };
+  return { version: 1, settings: { ...defaultSettings }, vocab: [], mistakes: [], days: {}, addedPacks: [], levelLog: [], phraseStats: {}, games: {}, badgesSeen: [], wordle: null, path: {}, questClaim: null, weekClaim: null };
 }
 
 function load(): AppState {
@@ -62,6 +62,8 @@ export function normalize(data: unknown): AppState {
     phraseStats: d.phraseStats && typeof d.phraseStats === 'object' ? d.phraseStats : {},
     games: d.games && typeof d.games === 'object' ? d.games : {},
     wordle: d.wordle && typeof d.wordle === 'object' ? d.wordle : null,
+    questClaim: typeof d.questClaim === 'string' ? d.questClaim : null,
+    weekClaim: typeof d.weekClaim === 'string' ? d.weekClaim : null,
     path: d.path && typeof d.path === 'object' ? d.path : {},
     // existing users: don't celebrate everything they unlocked before badges existed
     badgesSeen: Array.isArray(d.badgesSeen) ? d.badgesSeen : d.days && Object.keys(d.days).length ? ['__legacy'] : [],
@@ -325,8 +327,13 @@ export function recordActivity(route: string, xp: number) {
 export function recordGame(id: string, score: number, total: number, time?: number): boolean {
   const cur = state.games[id] ?? { plays: 0, best: 0, correct: 0 };
   const newBest = score > cur.best || (time !== undefined && score === total && (cur.bestTime === undefined || time < cur.bestTime));
+  const k = todayKey();
   setState((s) => ({
     ...s,
+    days: (() => {
+      const cur = s.days[k] ?? { words: 0, answers: 0 };
+      return { ...s.days, [k]: { ...cur, games: (cur.games ?? 0) + 1, perfect: (cur.perfect ?? 0) + (score === total && total > 0 ? 1 : 0) } };
+    })(),
     games: {
       ...s.games,
       [id]: {
@@ -343,5 +350,15 @@ export function recordGame(id: string, score: number, total: number, time?: numb
 
 /** Save the best star rating for a learning-path node. */
 export function savePathStars(nodeId: string, stars: number) {
-  setState((s) => ({ ...s, path: { ...s.path, [nodeId]: Math.max(s.path[nodeId] ?? 0, stars) } }));
+  const k = todayKey();
+  setState((s) => {
+    const cur = s.days[k] ?? { words: 0, answers: 0 };
+    return { ...s, days: { ...s.days, [k]: { ...cur, steps: (cur.steps ?? 0) + 1 } }, path: { ...s.path, [nodeId]: Math.max(s.path[nodeId] ?? 0, stars) } };
+  });
+}
+
+/** Mark today's quest chest / this week's challenge reward as collected. */
+export function claimQuest(kind: 'day' | 'week', key: string, xp: number) {
+  setState((s) => (kind === 'day' ? { ...s, questClaim: key } : { ...s, weekClaim: key }));
+  addXp(xp);
 }

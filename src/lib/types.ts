@@ -112,6 +112,11 @@ export interface DayStats {
   xp?: number;
   /** answers per exercise route */
   modes?: Record<string, number>;
+  /** finished game rounds that day / rounds without a mistake */
+  games?: number;
+  perfect?: number;
+  /** learning-path steps finished that day */
+  steps?: number;
 }
 
 export interface PhraseStat {
@@ -139,6 +144,9 @@ export interface AppState {
   path: Record<string, number>;
   /** today's "word of the day" attempt */
   wordle: { day: string; guesses: string[] } | null;
+  /** day key of the last opened daily-quest chest / Monday key of the last weekly reward */
+  questClaim: string | null;
+  weekClaim: string | null;
 }
 
 export interface GameStat {

@@ -22,6 +22,11 @@ const DAILY_GAMES: { route: Route; title: string; target: number; icon: IconName
   { route: 'match', title: 'Párování (3 tabule)', target: 15, icon: 'sparkle', tone: 'pink' },
   { route: 'grammar', title: 'Gramatika: 10 otázek', target: 10, icon: 'book', tone: 'amber' },
   { route: 'traps', title: 'Chytáky: 10 vět', target: 10, icon: 'target', tone: 'rose' },
+  { route: 'verbs', title: 'Nepravidelná slovesa: 10', target: 10, icon: 'ladder', tone: 'teal' },
+  { route: 'preps', title: 'Předložky: 10 vět', target: 10, icon: 'flag', tone: 'indigo' },
+  { route: 'situations', title: 'Co řekneš? (8 situací)', target: 8, icon: 'dialog', tone: 'pink' },
+  { route: 'numbers', title: 'Čísla poslechem: 10', target: 10, icon: 'coins', tone: 'sky' },
+  { route: 'blitz', title: 'Blesk: 1 kolo', target: 1, icon: 'bolt', tone: 'amber' },
 ];
 
 export interface Task {

@@ -1,12 +1,16 @@
-import { Lock } from 'lucide-react';
+import { ChevronRight, Lock } from 'lucide-react';
+import { GAME_LIST } from '../data/games';
+import { navigate, type Route } from '../lib/router';
+import { isDue } from '../lib/srs';
+import type { IconName, Tone } from '../components/icons';
 import { useMemo, useState } from 'react';
 import { IconTile } from '../components/icons';
-import { Card, Label, ModeHeader, cx } from '../components/ui';
+import { Card, Label, cx } from '../components/ui';
 import { BADGES } from '../data/achievements';
 import { WeeklyReport } from '../components/WeeklyReport';
 import { dayXp, rankOf, streak, todayKey, totalXp, useStore } from '../lib/store';
 
-const GAME_NAMES: Record<string, string> = { quiz: 'Kvíz', builder: 'Skládání vět', listen: 'Poslech', match: 'Párování', grammar: 'Gramatika', traps: 'Chytáky', wordle: 'Slovo dne' };
+const GAME_NAMES: Record<string, string> = { wordle: 'Slovo dne', ...Object.fromEntries(GAME_LIST.flatMap((c) => c.games.map((g) => [g.id, g.title]))) };
 const fmtTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
 export default function Progress() {
@@ -42,7 +46,12 @@ export default function Progress() {
 
   return (
     <div className="space-y-6">
-      <ModeHeader title="Tvůj pokrok" subtitle={`${active} ${active === 1 ? 'den' : active >= 2 && active <= 4 ? 'dny' : 'dní'} tréninku celkem`} />
+      <div>
+        <h1 className="text-2xl font-extrabold tracking-tight">Profil</h1>
+        <div className="text-xs text-muted">
+          {active} {active === 1 ? 'den' : active >= 2 && active <= 4 ? 'dny' : 'dní'} tréninku celkem
+        </div>
+      </div>
 
       <div className="relative overflow-hidden rounded-3xl hero-gradient p-5 text-white shadow-lg shadow-accent/25">
         <div className="pointer-events-none absolute -right-8 -top-10 size-36 rounded-full bg-white/10" />
@@ -58,6 +67,10 @@ export default function Progress() {
           </span>
         </div>
       </div>
+
+      <ProfileMenu mistakesDue={state.mistakes.filter((m) => !m.mastered && isDue(m.dueDate)).length} mistakes={state.mistakes.filter((m) => !m.mastered).length} />
+
+      <Heatmap days={state.days} goal={goal} />
 
       <WeeklyReport />
 
@@ -159,5 +172,67 @@ export default function Progress() {
         </div>
       </section>
     </div>
+  );
+}
+
+function ProfileMenu({ mistakesDue, mistakes }: { mistakesDue: number; mistakes: number }) {
+  const items: { route: Route; title: string; desc: string; icon: IconName; tone: Tone; badge?: number }[] = [
+    { route: 'mistakes', title: 'Banka chyb', desc: mistakes ? `${mistakes} chyb k opravení` : 'Tvoje chyby a jejich oprava', icon: 'target', tone: 'rose', badge: mistakesDue },
+    { route: 'course', title: 'Učebnice', desc: 'Lekce z učebnice a jejich témata', icon: 'book', tone: 'indigo' },
+    { route: 'cheatsheet', title: 'Gramatický tahák', desc: 'Pravidla česky', icon: 'bulb', tone: 'amber' },
+    { route: 'placement', title: 'Rozřazovací test', desc: 'Zjisti svou úroveň za 2 minuty', icon: 'goal', tone: 'emerald' },
+    { route: 'settings', title: 'Nastavení', desc: 'API klíč, mikrofon, cíl, barvy, záloha', icon: 'wrench', tone: 'slate' },
+  ];
+  return (
+    <Card className="divide-y divide-line p-0">
+      {items.map((m) => (
+        <button key={m.route} onClick={() => navigate(m.route)} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-surface-2">
+          <IconTile name={m.icon} tone={m.tone} size="sm" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold">{m.title}</span>
+            <span className="block truncate text-xs text-muted">{m.desc}</span>
+          </span>
+          {!!m.badge && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1.5 text-[10px] font-bold text-white">{m.badge}</span>}
+          <ChevronRight className="size-4 text-muted" />
+        </button>
+      ))}
+    </Card>
+  );
+}
+
+/** Activity calendar for the last 18 weeks, one square per day. */
+function Heatmap({ days, goal }: { days: Record<string, { answers: number; xp?: number }>; goal: number }) {
+  const WEEKS = 18;
+  const end = new Date();
+  const start = new Date(end);
+  start.setDate(end.getDate() - ((end.getDay() + 6) % 7) - (WEEKS - 1) * 7);
+  const cols = Array.from({ length: WEEKS }, (_, w) =>
+    Array.from({ length: 7 }, (_, d) => {
+      const x = new Date(start);
+      x.setDate(start.getDate() + w * 7 + d);
+      const k = todayKey(x);
+      return { k, future: x > end, xp: dayXp(days[k] as never) };
+    }),
+  );
+  const level = (xp: number) => (xp <= 0 ? 0 : xp < goal / 2 ? 1 : xp < goal ? 2 : xp < goal * 2 ? 3 : 4);
+  const CLS = ['bg-surface-3', 'bg-accent/30', 'bg-accent/55', 'bg-accent', 'bg-emerald-500'];
+  return (
+    <section>
+      <Label className="mb-2">Kalendář tréninku</Label>
+      <Card>
+        <div className="flex justify-between gap-[3px]">
+          {cols.map((col, w) => (
+            <div key={w} className="flex flex-1 flex-col gap-[3px]">
+              {col.map((c) => (
+                <div key={c.k} title={`${c.k}: ${c.xp} XP`} className={cx('aspect-square w-full rounded-[3px]', c.future ? 'bg-transparent' : CLS[level(c.xp)], c.k === todayKey() && 'ring-1 ring-fg/50')} />
+              ))}
+            </div>
+          ))}
+        </div>
+        <div className="mt-2 flex items-center justify-end gap-1 text-[10px] text-muted">
+          méně {CLS.map((c) => <span key={c} className={cx('size-2.5 rounded-[2px]', c)} />)} víc
+        </div>
+      </Card>
+    </section>
   );
 }

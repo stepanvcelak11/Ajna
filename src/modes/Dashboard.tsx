@@ -1,6 +1,5 @@
-import { AlertTriangle, Check, ChevronRight, KeyRound, WifiOff, X } from 'lucide-react';
+import { Check, ChevronRight, KeyRound, WifiOff, X } from 'lucide-react';
 import { useState } from 'react';
-import { TRAP_LABELS } from '../components/FeedbackCard';
 import { Icon, IconTile, type IconName, type Tone } from '../components/icons';
 import { LevelSheet } from '../components/LevelPicker';
 import { Btn, Card, Label, cx } from '../components/ui';
@@ -9,7 +8,7 @@ import { lessonOfTopic } from '../data/textbook';
 import { hasKey } from '../lib/llm';
 import { navigate, type Route } from '../lib/router';
 import { isDue } from '../lib/srs';
-import { dayXp, levelSuggestion, rankOf, streakInfo, todayKey, topTraps, totalXp, updateSettings, useStore } from '../lib/store';
+import { dayXp, levelSuggestion, rankOf, streakInfo, todayKey, totalXp, updateSettings, useStore } from '../lib/store';
 import { useOnline } from '../lib/ui';
 
 type ModeDef = { route: Route; title: string; desc: string; icon: IconName; tone: Tone; offline?: boolean };
@@ -24,24 +23,14 @@ const SPEAK_MODES: (ModeDef & { wide?: boolean })[] = [
 ];
 
 const REVIEW_MODES: (ModeDef & { wide?: boolean })[] = [
-  { route: 'vocab-review', title: 'Slovíčka', desc: 'Vybav si slovo a použij ho', icon: 'cards', tone: 'pink', offline: true },
+  { route: 'vocab-review', title: 'Slovíčka', desc: 'Vybav si slovo a použij ho', icon: 'cards', tone: 'pink', offline: true, wide: true },
   { route: 'cards', title: 'Kartičky', desc: 'Rychle: otoč, ohodnoť, švihni', icon: 'layers', tone: 'violet', offline: true },
   { route: 'mistake-practice', title: 'Moje chyby', desc: 'Procvič, co ti nešlo', icon: 'target', tone: 'rose' },
-  { route: 'cheatsheet', title: 'Gramatický tahák', desc: 'Pravidla česky a typické chyby', icon: 'bulb', tone: 'indigo', offline: true },
-];
-
-// colourful game cards; all of them work offline
-const GAMES: { route: Route; title: string; desc: string; icon: IconName; bg: string; id?: string }[] = [
-  { route: 'sprint', title: 'Rychlé fráze', desc: 'Řekni větu, hned víš', icon: 'bolt', bg: 'from-orange-500 to-rose-500' },
-  { route: 'quiz', title: 'Kvíz', desc: '12 otázek na čas', icon: 'medal', bg: 'from-violet-500 to-indigo-600', id: 'quiz' },
-  { route: 'builder', title: 'Skládání vět', desc: 'Správný slovosled', icon: 'layers', bg: 'from-sky-500 to-blue-600', id: 'builder' },
-  { route: 'listen', title: 'Poslech', desc: 'Slyšíš a opakuješ', icon: 'chat', bg: 'from-emerald-500 to-teal-600', id: 'listen' },
-  { route: 'match', title: 'Párování', desc: 'Spoj dvojice na čas', icon: 'sparkle', bg: 'from-pink-500 to-fuchsia-600', id: 'match' },
-  { route: 'grammar', title: 'Gramatika', desc: 'Doplň tvar + vysvětlení', icon: 'book', bg: 'from-amber-500 to-orange-600', id: 'grammar' },
-  { route: 'traps', title: 'Chytáky', desc: 'Typické chyby Čechů', icon: 'target', bg: 'from-rose-500 to-red-600', id: 'traps' },
 ];
 
 import { dailyPlan, wordleDoneToday } from '../lib/plan';
+import { QuestCard } from '../components/QuestCard';
+import { GAME_LIST, gameOfDay } from '../data/games';
 import { NODE_INFO, pathFor } from '../data/path';
 import { phrasesFor } from '../data/phrases';
 import { SpeakButton } from '../components/Speak';
@@ -79,9 +68,6 @@ export default function Dashboard() {
   const level = useStore((s) => s.settings.level);
   const focus = useStore((s) => s.settings.focus);
   const levelLog = useStore((s) => s.levelLog);
-  const games = useStore((s) => s.games);
-  useStore((s) => s.wordle);
-  const wordleDone = wordleDoneToday();
   useStore((s) => s.settings.provider + s.settings.geminiKey + s.settings.anthropicKey + s.settings.openaiKey);
   const online = useOnline();
   const [levelOpen, setLevelOpen] = useState(false);
@@ -95,8 +81,6 @@ export default function Dashboard() {
   const next = plan.find((t) => t.done < t.target && !(t.ai && (!online || !hasKey()))) ?? plan.find((t) => t.done < t.target);
   const vocabDue = vocab.filter((v) => isDue(v.srs.dueDate)).length;
   const mistakesDue = mistakes.filter((m) => !m.mastered && isDue(m.dueDate)).length;
-  const active = mistakes.filter((m) => !m.mastered);
-  const traps = topTraps(active.length ? active : mistakes, 3);
 
   const badge: Partial<Record<Route, number>> = { 'vocab-review': vocabDue, cards: vocabDue, 'mistake-practice': mistakesDue };
 
@@ -114,6 +98,8 @@ export default function Dashboard() {
           <ChevronRight className="size-4 text-muted" />
         </Card>
       )}
+
+      <QuestCard />
 
       {/* --- today's plan --- */}
       <section>
@@ -249,68 +235,7 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* --- games --- */}
-      <section>
-        <div className="mb-2 flex items-center justify-between">
-          <Label>Hry · fungují i offline</Label>
-          <button onClick={() => navigate('progress')} className="text-[11px] font-medium text-accent">
-            Rekordy
-          </button>
-        </div>
-        <button
-          onClick={() => navigate('wordle')}
-          className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-line bg-surface p-3 text-left transition active:scale-[0.99]"
-        >
-          <span className="grid grid-cols-5 gap-0.5">
-            {['W', 'O', 'R', 'D', 'S'].map((ch, k) => (
-              <span
-                key={k}
-                className={cx(
-                  'grid size-6 place-items-center rounded-md text-[11px] font-extrabold text-white',
-                  wordleDone ? 'bg-emerald-500' : k % 3 === 0 ? 'bg-emerald-500' : k % 3 === 1 ? 'bg-amber-500' : 'bg-surface-3 text-muted',
-                )}
-              >
-                {ch}
-              </span>
-            ))}
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-bold">Slovo dne</span>
-            <span className="block text-xs text-muted">{wordleDone ? 'Dnes hotovo · další zítra (nebo trénink)' : 'Uhodni anglické slovo na 6 pokusů'}</span>
-          </span>
-          <ChevronRight className="size-4 text-muted" />
-        </button>
-        <div className="grid grid-cols-2 gap-3">
-          {GAMES.map((g, n) => {
-            const st = g.id ? games[g.id] : undefined;
-            return (
-              <button
-                key={g.route}
-                onClick={() => navigate(g.route)}
-                className={cx(
-                  'relative overflow-hidden rounded-2xl bg-gradient-to-br p-3.5 text-left text-white shadow-md transition active:scale-[0.98]',
-                  g.bg,
-                  (n === 0 || (n === GAMES.length - 1 && GAMES.length % 2 === 0)) && 'col-span-2 flex items-center gap-3',
-                )}
-              >
-                <span className="pointer-events-none absolute -right-5 -top-6 size-20 rounded-full bg-white/15" />
-                <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-white/20">
-                  <Icon name={g.icon} className="size-6" />
-                </span>
-                <span className={cx('block', !(n === 0 || (n === GAMES.length - 1 && GAMES.length % 2 === 0)) && 'mt-3')}>
-                  <span className="block text-sm font-bold leading-tight">{g.title}</span>
-                  <span className="mt-0.5 block text-xs leading-snug text-white/80">{g.desc}</span>
-                </span>
-                {st && st.plays > 0 && (
-                  <span className="absolute right-2.5 top-2.5 rounded-full bg-black/20 px-2 py-0.5 text-[10px] font-semibold tabular-nums">
-                    {g.id === 'match' && st.bestTime ? `${Math.floor(st.bestTime / 60)}:${String(st.bestTime % 60).padStart(2, '0')}` : `max ${st.best}`}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </section>
+      <GamesStrip />
 
       {/* --- AI speaking --- */}
       <section>
@@ -335,31 +260,6 @@ export default function Dashboard() {
           ))}
         </div>
       </section>
-
-      {traps.length > 0 && (
-        <Card onClick={() => navigate('mistakes')}>
-          <Label className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
-            <AlertTriangle className="size-3.5" /> Tvoje nejčastější chyby
-          </Label>
-          <div className="mt-3 space-y-2.5">
-            {traps.map((t, i) => (
-              <div key={t.category} className="flex items-start gap-3">
-                <div className="size-6 rounded-lg bg-amber-500/12 text-amber-600 dark:text-amber-400 grid place-items-center text-xs font-semibold shrink-0">
-                  {i + 1}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium">
-                    {TRAP_LABELS[t.category] ?? t.category} <span className="text-xs text-muted font-normal">×{t.count}</span>
-                  </div>
-                  <div className="text-xs text-muted truncate">
-                    <span className="line-through">{t.example.error}</span> → {t.example.correction}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
 
       <div className="hidden sm:block text-[11px] text-muted text-center pb-2">
         Klávesy: Mezerník = nahrávat · Enter = odeslat · R = přehrát · S = uložit chybu · Ctrl+K = Nevím slovo
@@ -549,5 +449,76 @@ function BackupNudge() {
       </div>
       <ChevronRight className="size-4 text-muted" />
     </Card>
+  );
+}
+
+function GamesStrip() {
+  const games = useStore((s) => s.games);
+  useStore((s) => s.wordle);
+  const wordleDone = wordleDoneToday();
+  const featured = gameOfDay();
+  const all = GAME_LIST.flatMap((c) => c.games);
+  // newest first, then least played
+  const pick = [...all]
+    .filter((g) => g.route !== featured.route && g.route !== 'cards')
+    .sort((a, b) => Number(!!b.isNew && !games[b.id]?.plays) - Number(!!a.isNew && !games[a.id]?.plays) || (games[a.id]?.plays ?? 0) - (games[b.id]?.plays ?? 0))
+    .slice(0, 6);
+  return (
+    <section>
+      <div className="mb-2 flex items-center justify-between">
+        <Label>Hry · fungují i offline</Label>
+        <button onClick={() => navigate('games')} className="text-[11px] font-semibold text-accent">
+          Všechny hry ({all.length + 1}) ›
+        </button>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          onClick={() => navigate(featured.route)}
+          className={cx('relative col-span-2 flex items-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-br p-3.5 text-left text-white shadow-md transition active:scale-[0.98]', featured.bg)}
+        >
+          <span className="pointer-events-none absolute -right-5 -top-6 size-20 rounded-full bg-white/15" />
+          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-white/20">
+            <Icon name={featured.icon} className="size-6" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[10px] font-bold uppercase tracking-wider text-white/80">Hra dne · bonus XP</span>
+            <span className="block text-sm font-bold leading-tight">{featured.title}</span>
+            <span className="block text-xs text-white/80">{featured.desc}</span>
+          </span>
+          <ChevronRight className="size-4" />
+        </button>
+        {!wordleDone && (
+          <button onClick={() => navigate('wordle')} className="col-span-2 flex items-center gap-3 rounded-2xl border border-line bg-surface p-3 text-left transition active:scale-[0.99]">
+            <span className="grid grid-cols-5 gap-0.5">
+              {['W', 'O', 'R', 'D', 'S'].map((ch, k) => (
+                <span key={k} className={cx('grid size-6 place-items-center rounded-md text-[11px] font-extrabold text-white', k % 3 === 0 ? 'bg-emerald-500' : k % 3 === 1 ? 'bg-amber-500' : 'bg-surface-3 text-muted')}>
+                  {ch}
+                </span>
+              ))}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-bold">Slovo dne</span>
+              <span className="block text-xs text-muted">Uhodni anglické slovo na 6 pokusů</span>
+            </span>
+            <ChevronRight className="size-4 text-muted" />
+          </button>
+        )}
+      </div>
+      <div className="-mx-4 mt-3 flex snap-x gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+        {pick.map((g) => (
+          <button
+            key={g.route}
+            onClick={() => navigate(g.route)}
+            className={cx('relative w-32 shrink-0 snap-start overflow-hidden rounded-2xl bg-gradient-to-br p-3 text-left text-white shadow-sm transition active:scale-[0.97]', g.bg)}
+          >
+            <span className="grid size-9 place-items-center rounded-xl bg-white/20">
+              <Icon name={g.icon} className="size-5" />
+            </span>
+            <span className="mt-2 block text-[13px] font-bold leading-tight">{g.title}</span>
+            {g.isNew && !games[g.id]?.plays && <span className="absolute right-2 top-2 rounded-full bg-white px-1.5 py-0.5 text-[9px] font-extrabold text-fuchsia-600">NOVÉ</span>}
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }

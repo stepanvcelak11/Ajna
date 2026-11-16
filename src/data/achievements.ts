@@ -64,6 +64,12 @@ export const BADGES: Badge[] = [
   { id: 'traps50', title: 'Lovec chytáků', desc: 'Odhal 50 chytáků', icon: 'target', tone: 'rose', progress: (s) => [game(s, 'traps').correct, 50] },
   { id: 'path10', title: 'Poutník', desc: 'Dokonči 10 kroků na Cestě', icon: 'flag', tone: 'indigo', progress: (s) => [Object.keys(s.path).length, 10] },
   { id: 'path3stars', title: 'Hvězdář', desc: 'Získej 30 hvězd na Cestě', icon: 'sparkle', tone: 'amber', progress: (s) => [Object.values(s.path).reduce((n, x) => n + x, 0), 30] },
+  { id: 'verbs100', title: 'Slovesář', desc: '100 nepravidelných sloves správně', icon: 'ladder', tone: 'teal', progress: (s) => [game(s, 'verbs').correct, 100] },
+  { id: 'preps50', title: 'In, on, at', desc: '50 předložek správně', icon: 'flag', tone: 'indigo', progress: (s) => [game(s, 'preps').correct, 50] },
+  { id: 'numbers', title: 'Počtář', desc: 'Čísla poslechem 10/10', icon: 'coins', tone: 'sky', progress: (s) => [game(s, 'numbers').perfect ?? 0, 1] },
+  { id: 'situations', title: 'Diplomat', desc: 'Co řekneš? bez chyby', icon: 'dialog', tone: 'pink', progress: (s) => [game(s, 'situations').perfect ?? 0, 1] },
+  { id: 'blitz25', title: 'Bleskový', desc: 'V Blesku 25 bodů', icon: 'bolt', tone: 'amber', progress: (s) => [game(s, 'blitz').best, 25] },
+  { id: 'week', title: 'Týden splněn', desc: 'Splň týdenní výzvu', icon: 'trophy', tone: 'emerald', progress: (s) => [s.weekClaim ? 1 : 0, 1] },
   { id: 'explorer', title: 'Průzkumník', desc: `Vyzkoušej všech ${EXPLORE.length} cvičení`, icon: 'target', tone: 'slate', progress: (s) => [explored(s), EXPLORE.length] },
 ];
 

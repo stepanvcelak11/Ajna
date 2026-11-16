@@ -1,12 +1,16 @@
 // Shared building blocks for the mini-games: header with progress + combo, choice buttons, end screen.
 import { RotateCcw, Trophy } from 'lucide-react';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { GAME_LIST, gameOfDay } from '../data/games';
+import { addXp, todayKey } from '../lib/store';
 import { navigate, useRoute } from '../lib/router';
 import { nextTask } from '../lib/plan';
 import { sfx } from '../lib/sfx';
 import { celebrate } from '../lib/ui';
 import { Icon, IconTile, type IconName, type Tone } from './icons';
 import { Btn, Card, ModeHeader, cx } from './ui';
+
+const GAME_ROUTES = new Set<string>(GAME_LIST.flatMap((c) => c.games.map((g) => g.route)));
 
 export function GameHeader({ title, subtitle, i, total, combo }: { title: string; subtitle?: string; i: number; total: number; combo: number }) {
   return (
@@ -90,6 +94,20 @@ export function GameEnd({
       sfx.win();
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // game of the day: the first finished round today earns the XP once more
+  const [bonus] = useState(() => {
+    if (onContinue || route !== gameOfDay().route || xp <= 0) return 0;
+    try {
+      if (localStorage.getItem('ajna-god') === todayKey()) return 0;
+      localStorage.setItem('ajna-god', todayKey());
+    } catch {
+      return 0;
+    }
+    return xp;
+  });
+  useEffect(() => {
+    if (bonus) addXp(bonus);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const msg = ratio === 1 ? 'Perfektní kolo!' : ratio >= 0.8 ? 'Výborně!' : ratio >= 0.5 ? 'Dobrá práce!' : 'Nevzdávej to, příště to bude lepší.';
   return (
     <Card className="space-y-4 py-7 text-center animate-up">
@@ -106,6 +124,11 @@ export function GameEnd({
       </div>
       <div className="flex justify-center gap-2">
         <span className="inline-flex items-center gap-1 rounded-full bg-accent/12 px-3 py-1 text-xs font-bold text-accent">+{xp} XP</span>
+        {bonus > 0 && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-fuchsia-500/14 px-3 py-1 text-xs font-bold text-fuchsia-600 animate-pop dark:text-fuchsia-300">
+            +{bonus} bonus Hra dne
+          </span>
+        )}
         {best && (
           <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/14 px-3 py-1 text-xs font-bold text-amber-600 dark:text-amber-300">
             <Trophy className="size-3.5" /> Nový rekord
@@ -132,8 +155,8 @@ export function GameEnd({
         </Btn>
       )}
       <div className="flex gap-2 pt-1">
-        <Btn className="flex-1" onClick={() => navigate('home')}>
-          Domů
+        <Btn className="flex-1" onClick={() => navigate(GAME_ROUTES.has(route) ? 'games' : 'home')}>
+          {GAME_ROUTES.has(route) ? 'Hry' : 'Domů'}
         </Btn>
         <Btn variant="primary" className="flex-1" onClick={onAgain}>
           <RotateCcw className="size-4" /> Hrát znovu

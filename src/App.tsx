@@ -1,4 +1,4 @@
-import { AlertCircle, BookOpen, GraduationCap, Home, Map as MapIcon, Settings as Cog, WifiOff } from 'lucide-react';
+import { BookOpen, Gamepad2, Home, Map as MapIcon, UserRound, WifiOff } from 'lucide-react';
 import { lazy, Suspense, useEffect, type ComponentType } from 'react';
 import { WordRescue } from './components/WordRescue';
 import { cx } from './components/ui';
@@ -38,6 +38,12 @@ const Cheatsheet = lazy(() => import('./modes/Cheatsheet'));
 const Cards = lazy(() => import('./modes/Cards'));
 const Path = lazy(() => import('./modes/Path'));
 const Tutor = lazy(() => import('./modes/Tutor'));
+const Games = lazy(() => import('./modes/Games'));
+const Verbs = lazy(() => import('./modes/Verbs'));
+const Numbers = lazy(() => import('./modes/Numbers'));
+const Situations = lazy(() => import('./modes/Situations'));
+const Blitz = lazy(() => import('./modes/Blitz'));
+const Preps = lazy(() => import('./modes/Preps'));
 import { Confetti } from './components/Confetti';
 import { BadgeWatcher } from './components/BadgeWatcher';
 import { Onboarding } from './components/Onboarding';
@@ -69,16 +75,23 @@ const SCREENS: Record<Route, ComponentType> = {
   cards: Cards,
   path: Path,
   tutor: Tutor,
+  games: Games,
+  verbs: Verbs,
+  numbers: Numbers,
+  situations: Situations,
+  blitz: Blitz,
+  preps: Preps,
 };
 
 const TABS: { route: Route; label: string; icon: typeof Home; match: Route[] }[] = [
-  { route: 'home', label: 'Trénink', icon: Home, match: ['home', 'ladder', 'drill', 'monologue', 'roleplay', 'sprint', 'quiz', 'builder', 'listen', 'match', 'progress', 'grammar', 'placement', 'stories', 'traps', 'wordle', 'cheatsheet'] },
+  { route: 'home', label: 'Domů', icon: Home, match: ['home'] },
   { route: 'path', label: 'Cesta', icon: MapIcon, match: ['path'] },
-  { route: 'course', label: 'Učebnice', icon: GraduationCap, match: ['course'] },
-  { route: 'vocab', label: 'Slovíčka', icon: BookOpen, match: ['vocab', 'vocab-review', 'cards'] },
-  { route: 'mistakes', label: 'Chyby', icon: AlertCircle, match: ['mistakes', 'mistake-practice'] },
-  { route: 'settings', label: 'Nastavení', icon: Cog, match: ['settings'] },
+  { route: 'games', label: 'Hry', icon: Gamepad2, match: ['games'] },
+  { route: 'vocab', label: 'Slovíčka', icon: BookOpen, match: ['vocab'] },
+  { route: 'progress', label: 'Profil', icon: UserRound, match: ['progress', 'settings', 'mistakes', 'course'] },
 ];
+// sections reachable from the profile keep the tab bar; exercises are full-screen
+const NAV_ROUTES = new Set<Route>(TABS.flatMap((t) => t.match));
 
 export default function App() {
   const route = useRoute();
@@ -91,7 +104,7 @@ export default function App() {
   const Screen = SCREENS[route];
   const onboarded = useStore((s) => s.settings.onboarded);
   // exercises are full-screen (back arrow in the header); the tab bar shows on the main sections only
-  const showNav = TABS.some((t) => t.route === route);
+  const showNav = NAV_ROUTES.has(route);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
@@ -161,7 +174,7 @@ export default function App() {
 
   const badges: Partial<Record<Route, number>> = {
     vocab: vocab.filter((v) => isDue(v.srs.dueDate)).length,
-    mistakes: mistakes.filter((m) => !m.mastered && isDue(m.dueDate)).length,
+    progress: mistakes.filter((m) => !m.mastered && isDue(m.dueDate)).length,
   };
 
   if (!onboarded)
@@ -212,7 +225,7 @@ export default function App() {
       <nav
         style={IOS_STANDALONE ? { bottom: 'auto', top: 'var(--app-h, 100%)', transform: 'translateY(-100%)' } : undefined}
         className="fixed bottom-0 inset-x-0 z-40 border-t border-line bg-bg/85 backdrop-blur-xl pb-[env(safe-area-inset-bottom)]">
-        <div className="mx-auto max-w-xl grid grid-cols-6">
+        <div className="mx-auto max-w-xl grid grid-cols-5">
           {TABS.map((t) => {
             const active = t.match.includes(route);
             const b = badges[t.route];
