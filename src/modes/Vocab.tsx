@@ -51,7 +51,7 @@ export default function Vocab() {
       </div>
 
       <div>
-        <Label className="mb-2">Startovní balíčky B1/B2</Label>
+        <Label className="mb-2">Balíčky slovíček</Label>
         <div className="flex gap-2 overflow-x-auto -mx-4 px-4 pb-1 snap-x">
           {STARTER_PACKS.map((p) => {
             const has = added.includes(p.id);

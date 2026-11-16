@@ -11,9 +11,10 @@ export type Route =
   | 'mistakes'
   | 'mistake-practice'
   | 'settings'
-  | 'course';
+  | 'course'
+  | 'sprint';
 
-const ROUTES: Route[] = ['home', 'ladder', 'drill', 'monologue', 'roleplay', 'vocab', 'vocab-review', 'mistakes', 'mistake-practice', 'settings', 'course'];
+const ROUTES: Route[] = ['home', 'ladder', 'drill', 'monologue', 'roleplay', 'vocab', 'vocab-review', 'mistakes', 'mistake-practice', 'settings', 'course', 'sprint'];
 
 function current(): Route {
   const h = location.hash.replace(/^#\/?/, '') as Route;

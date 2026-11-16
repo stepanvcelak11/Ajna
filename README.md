@@ -46,3 +46,10 @@ Any other static host works too (Netlify, Vercel, Cloudflare Pages): just publis
 
 ## Backup
 Nastavení → Export JSON / Import. API keys are never included in the export.
+
+## Motivation & quick practice
+
+- **Daily goal (XP)**: every answer earns XP (more for longer answers); pick the goal in Settings (50–300 XP). The dashboard shows a progress ring, the week, the streak and a rank.
+- **Daily plan**: vocabulary review, one round of quick phrases, a rotating AI challenge and mistake practice. One button takes you to the next unfinished step.
+- **Quick phrases (Rychlé fráze)**: 108 high-frequency spoken sentences in four levels. Czech → say it in English, with an instant offline check that tolerates contractions, numbers and small recognition errors. Phrases you get wrong come back first.
+- **Vocabulary packs**: false friends, make/do/take/have, linking words, feelings & opinions, everyday life (plus the original four).

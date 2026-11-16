@@ -234,6 +234,33 @@ export default function Settings() {
         </div>
       </Card>
 
+      <Card className="space-y-3">
+        <Label>Denní cíl</Label>
+        <div className="grid grid-cols-4 gap-2">
+          {[
+            { v: 50, t: 'Lehký', d: '~5 min' },
+            { v: 100, t: 'Běžný', d: '~10 min' },
+            { v: 200, t: 'Vážný', d: '~20 min' },
+            { v: 300, t: 'Drsný', d: '~30 min' },
+          ].map((g) => (
+            <button
+              key={g.v}
+              onClick={() => set({ dailyGoal: g.v })}
+              className={cx(
+                'rounded-xl border px-1 py-2.5 text-center',
+                s.dailyGoal === g.v ? 'border-accent bg-accent/10 text-accent' : 'border-line bg-surface-2',
+              )}
+            >
+              <div className="text-sm font-semibold">{g.t}</div>
+              <div className="text-[10px] text-muted">
+                {g.v} XP · {g.d}
+              </div>
+            </button>
+          ))}
+        </div>
+        <div className="text-[11px] text-muted">XP dostáváš za každou odpověď (víc za delší), za splněná cvičení a správné fráze.</div>
+      </Card>
+
       <Card className="divide-y divide-line py-1.5">
         <Row label="Vzhled">
           <Seg

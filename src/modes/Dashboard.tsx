@@ -1,4 +1,4 @@
-import { AlertTriangle, ChevronRight, KeyRound, WifiOff, X } from 'lucide-react';
+import { AlertTriangle, Check, ChevronRight, KeyRound, WifiOff, X } from 'lucide-react';
 import { useState } from 'react';
 import { TRAP_LABELS } from '../components/FeedbackCard';
 import { Icon, IconTile, type IconName, type Tone } from '../components/icons';
@@ -9,10 +9,12 @@ import { lessonOfTopic } from '../data/textbook';
 import { hasKey } from '../lib/llm';
 import { navigate, type Route } from '../lib/router';
 import { isDue } from '../lib/srs';
-import { levelSuggestion, streak, todayKey, topTraps, updateSettings, useStore } from '../lib/store';
+import { dayXp, levelSuggestion, rankOf, streak, todayKey, topTraps, totalXp, updateSettings, useStore } from '../lib/store';
+import type { DayStats } from '../lib/types';
 import { useOnline } from '../lib/ui';
 
 const MODES: { route: Route; title: string; desc: string; icon: IconName; tone: Tone; offline?: boolean }[] = [
+  { route: 'sprint', title: 'Rychlé fráze', desc: '10 vět, okamžitá kontrola, i offline', icon: 'bolt', tone: 'orange', offline: true },
   { route: 'drill', title: 'Překlad vět', desc: 'Česká věta → řekni ji anglicky', icon: 'swap', tone: 'sky' },
   { route: 'ladder', title: 'Nabalování vět', desc: 'Od krátké věty po složitou', icon: 'ladder', tone: 'violet' },
   { route: 'monologue', title: 'Monolog', desc: 'Mluv volně, dostaneš rodilou verzi', icon: 'mic', tone: 'emerald' },
@@ -20,6 +22,68 @@ const MODES: { route: Route; title: string; desc: string; icon: IconName; tone: 
   { route: 'vocab-review', title: 'Slovíčka', desc: 'Vybav si slovo a použij ho', icon: 'cards', tone: 'pink', offline: true },
   { route: 'mistake-practice', title: 'Moje chyby', desc: 'Procvič, co ti nešlo', icon: 'target', tone: 'rose' },
 ];
+
+// The AI exercise of the day rotates so every day feels a bit different.
+const CHALLENGES: { route: Route; title: string; target: number; unit: string; icon: IconName; tone: Tone }[] = [
+  { route: 'drill', title: 'Přelož 5 vět', target: 5, unit: 'vět', icon: 'swap', tone: 'sky' },
+  { route: 'ladder', title: 'Nabal 3 věty', target: 3, unit: 'kroků', icon: 'ladder', tone: 'violet' },
+  { route: 'monologue', title: 'Řekni 1 monolog', target: 1, unit: 'monolog', icon: 'mic', tone: 'emerald' },
+  { route: 'roleplay', title: 'Zahraj si scénku (4 repliky)', target: 4, unit: 'replik', icon: 'dialog', tone: 'amber' },
+];
+
+interface Task {
+  route: Route;
+  title: string;
+  done: number;
+  target: number;
+  icon: IconName;
+  tone: Tone;
+  ai?: boolean;
+}
+
+function dailyPlan(day: DayStats | undefined, vocabCount: number, vocabDue: number, mistakesDue: number): Task[] {
+  const m = day?.modes ?? {};
+  const tasks: Task[] = [];
+  const reviewed = m['vocab-review'] ?? 0;
+  if (vocabCount > 0 && (vocabDue > 0 || reviewed > 0)) {
+    // step 1 + step 2 per card both count as answers, so 10 answers ≈ 5 cards
+    tasks.push({ route: 'vocab-review', title: 'Zopakuj slovíčka', done: Math.min(reviewed, 10), target: vocabDue === 0 ? Math.min(reviewed, 10) : 10, icon: 'cards', tone: 'pink' });
+  }
+  tasks.push({ route: 'sprint', title: 'Rychlé fráze (1 kolo)', done: Math.min(m.sprint ?? 0, 10), target: 10, icon: 'bolt', tone: 'orange' });
+  const c = CHALLENGES[Math.floor(Date.now() / 86400000) % CHALLENGES.length];
+  tasks.push({ route: c.route, title: c.title, done: Math.min(m[c.route] ?? 0, c.target), target: c.target, icon: c.icon, tone: c.tone, ai: true });
+  const fixed = m['mistake-practice'] ?? 0;
+  if (mistakesDue > 0 || fixed > 0) {
+    tasks.push({ route: 'mistake-practice', title: 'Oprav své chyby', done: Math.min(fixed, 3), target: mistakesDue === 0 ? Math.min(fixed, 3) : 3, icon: 'target', tone: 'rose', ai: true });
+  }
+  return tasks;
+}
+
+const WEEKDAYS = ['Ne', 'Po', 'Út', 'St', 'Čt', 'Pá', 'So'];
+
+function Ring({ value, size = 76, stroke = 8, children }: { value: number; size?: number; stroke?: number; children?: React.ReactNode }) {
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={stroke} className="stroke-white/20" />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          className="stroke-white transition-[stroke-dashoffset] duration-700"
+          strokeDasharray={c}
+          strokeDashoffset={c * (1 - Math.min(1, value))}
+        />
+      </svg>
+      <div className="absolute inset-0 grid place-items-center">{children}</div>
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const days = useStore((s) => s.days);
@@ -37,7 +101,8 @@ export default function Dashboard() {
   const lesson = lessonOfTopic(focus);
   const suggestion = levelSuggestion(levelLog, level);
   const today = days[todayKey()] ?? { words: 0, answers: 0 };
-  const st = streak(days);
+  const plan = dailyPlan(days[todayKey()], vocab.length, vocab.filter((v) => isDue(v.srs.dueDate)).length, mistakes.filter((m) => !m.mastered && isDue(m.dueDate)).length);
+  const next = plan.find((t) => t.done < t.target && !(t.ai && (!online || !hasKey()))) ?? plan.find((t) => t.done < t.target);
   const vocabDue = vocab.filter((v) => isDue(v.srs.dueDate)).length;
   const mistakesDue = mistakes.filter((m) => !m.mastered && isDue(m.dueDate)).length;
   const active = mistakes.filter((m) => !m.mastered);
@@ -47,15 +112,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <div className="text-xs font-medium text-muted">
-          {(() => {
-            const d = new Date().toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' });
-            return d.charAt(0).toUpperCase() + d.slice(1);
-          })()}
-        </div>
-        <h1 className="text-2xl font-bold tracking-tight">Ahoj! Pojďme mluvit.</h1>
-      </div>
+      <Hero />
 
       {!hasKey() && (
         <Card onClick={() => navigate('settings')} className="border-accent/50 bg-accent/5 flex items-center gap-3">
@@ -67,6 +124,56 @@ export default function Dashboard() {
           <ChevronRight className="size-4 text-muted" />
         </Card>
       )}
+
+      {/* --- today's plan --- */}
+      <section>
+        <div className="mb-2 flex items-center justify-between">
+          <Label>Dnešní plán</Label>
+          <span className="text-[11px] text-muted tabular-nums">
+            {plan.filter((t) => t.done >= t.target).length}/{plan.length} hotovo
+          </span>
+        </div>
+        <Card className="p-0 divide-y divide-line overflow-hidden">
+          {plan.map((t) => {
+            const done = t.done >= t.target;
+            const blocked = t.ai && (!online || !hasKey());
+            return (
+              <button key={t.route} onClick={() => navigate(t.route)} className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-surface-2">
+                {done ? (
+                  <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-emerald-500 text-white">
+                    <Check className="size-5" />
+                  </span>
+                ) : (
+                  <IconTile name={t.icon} tone={t.tone} size="sm" />
+                )}
+                <span className="flex-1 min-w-0">
+                  <span className={cx('block text-sm font-medium', done && 'text-muted line-through decoration-1')}>{t.title}</span>
+                  <span className="mt-1 flex items-center gap-2">
+                    <span className="h-1 flex-1 max-w-28 rounded-full bg-surface-3 overflow-hidden">
+                      <span className={cx('block h-full rounded-full', done ? 'bg-emerald-500' : 'bg-accent')} style={{ width: `${t.target ? (t.done / t.target) * 100 : 100}%` }} />
+                    </span>
+                    <span className="text-[10px] text-muted tabular-nums">
+                      {t.done}/{t.target}
+                    </span>
+                    {blocked && <WifiOff className="size-3 text-muted" />}
+                  </span>
+                </span>
+                {!done && <ChevronRight className="size-4 text-muted" />}
+              </button>
+            );
+          })}
+        </Card>
+        {next ? (
+          <Btn variant="primary" className="mt-3 w-full h-12 text-base" onClick={() => navigate(next.route)}>
+            {plan.some((t) => t.done > 0) ? 'Pokračovat' : 'Začít trénink'}: {next.title} <ChevronRight className="size-4" />
+          </Btn>
+        ) : (
+          <div className="mt-3 flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/8 px-3 py-2.5 text-sm">
+            <Icon name="trophy" className="size-5 text-emerald-500" />
+            <span>Dnešní plán splněn. Cokoliv navíc je bonus!</span>
+          </div>
+        )}
+      </section>
 
       {/* --- what am I practising --- */}
       <section>
@@ -134,12 +241,10 @@ export default function Dashboard() {
 
       {/* --- today --- */}
       <section>
-        <Label className="mb-2">Dnes</Label>
-        <div className="grid grid-cols-4 gap-2">
-          <Stat value={st} label={st === 1 ? 'den v řadě' : st >= 2 && st <= 4 ? 'dny v řadě' : 'dní v řadě'} tone="text-orange-500" />
-          <Stat value={today.words} label="slov řečeno" tone="text-accent" />
-          <Stat value={vocabDue} label="slovíček" tone="text-pink-500" onClick={() => navigate(vocabDue ? 'vocab-review' : 'vocab')} />
-          <Stat value={mistakesDue} label="chyb" tone="text-rose-500" onClick={() => navigate(mistakesDue ? 'mistake-practice' : 'mistakes')} />
+        <div className="grid grid-cols-3 gap-2">
+          <Stat value={today.words} label="slov dnes řečeno" tone="text-accent" />
+          <Stat value={vocabDue} label="slovíček k opakování" tone="text-pink-500" onClick={() => navigate(vocabDue ? 'vocab-review' : 'vocab')} />
+          <Stat value={mistakesDue} label="chyb k opravě" tone="text-rose-500" onClick={() => navigate(mistakesDue ? 'mistake-practice' : 'mistakes')} />
         </div>
       </section>
 
@@ -209,5 +314,82 @@ function Stat({ value, label, tone, onClick }: { value: number; label: string; t
       <div className={cx('text-xl font-bold tabular-nums', tone)}>{value}</div>
       <div className="mt-0.5 text-[10px] leading-tight text-muted">{label}</div>
     </button>
+  );
+}
+
+function Hero() {
+  const days = useStore((s) => s.days);
+  const goal = useStore((s) => s.settings.dailyGoal);
+  const k = todayKey();
+  const xp = dayXp(days[k]);
+  const st = streak(days);
+  const rank = rankOf(totalXp(days));
+  const met = xp >= goal;
+  const week = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    const key = todayKey(d);
+    return { key, label: WEEKDAYS[d.getDay()], v: Math.min(1, dayXp(days[key]) / goal), today: key === k };
+  });
+  const date = new Date().toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  return (
+    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#7c5cff] via-[#6a4cf0] to-[#4b3bd1] p-5 text-white shadow-lg shadow-accent/25">
+      <div className="pointer-events-none absolute -right-10 -top-12 size-44 rounded-full bg-white/10" />
+      <div className="pointer-events-none absolute -bottom-16 -left-8 size-40 rounded-full bg-white/5" />
+      <div className="relative flex items-center gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="text-xs font-medium text-white/70">{date.charAt(0).toUpperCase() + date.slice(1)}</div>
+          <div className="mt-0.5 text-xl font-bold leading-tight">
+            {met ? 'Cíl splněn, skvělá práce!' : xp > 0 ? 'Jen tak dál!' : st > 0 ? 'Udrž sérii!' : 'Ahoj! Pojďme mluvit.'}
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
+            <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 font-semibold">
+              <Icon name="flame" className={cx('size-3.5', st > 0 ? 'text-orange-300' : 'text-white/60')} />
+              {st} {st === 1 ? 'den' : st >= 2 && st <= 4 ? 'dny' : 'dní'}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 font-semibold">
+              <Icon name="medal" className="size-3.5 text-amber-200" />
+              {rank.name}
+            </span>
+          </div>
+        </div>
+        <Ring value={xp / goal}>
+          <div className="text-center leading-none">
+            {met ? <Check className="mx-auto size-7" /> : <div className="text-lg font-bold tabular-nums">{xp}</div>}
+            <div className="mt-1 text-[10px] text-white/70 tabular-nums">{met ? `${xp} XP` : `/ ${goal} XP`}</div>
+          </div>
+        </Ring>
+      </div>
+
+      <div className="relative mt-4 grid grid-cols-7 gap-1.5">
+        {week.map((d) => (
+          <div key={d.key} className="flex flex-col items-center gap-1">
+            <div
+              className={cx(
+                'grid size-7 place-items-center rounded-full text-[10px] font-bold',
+                d.v >= 1 ? 'bg-white text-[#5b3fe6]' : d.v > 0 ? 'bg-white/30' : 'bg-white/10',
+                d.today && 'ring-2 ring-white/80 ring-offset-2 ring-offset-[#6a4cf0]',
+              )}
+            >
+              {d.v >= 1 ? <Check className="size-3.5" strokeWidth={3} /> : d.v > 0 ? <span className="size-1.5 rounded-full bg-white" /> : null}
+            </div>
+            <span className={cx('text-[10px]', d.today ? 'font-semibold' : 'text-white/60')}>{d.label}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="relative mt-4">
+        <div className="flex justify-between text-[10px] text-white/70">
+          <span>Hodnost {rank.rank} · {rank.name}</span>
+          <span className="tabular-nums">
+            {rank.into}/{rank.need} XP
+          </span>
+        </div>
+        <div className="mt-1 h-1.5 rounded-full bg-white/15 overflow-hidden">
+          <div className="h-full rounded-full bg-amber-300 transition-all" style={{ width: `${(rank.into / rank.need) * 100}%` }} />
+        </div>
+      </div>
+    </div>
   );
 }

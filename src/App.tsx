@@ -17,6 +17,7 @@ import Settings from './modes/Settings';
 import Vocab from './modes/Vocab';
 import VocabReview from './modes/VocabReview';
 import Course from './modes/Course';
+import Sprint from './modes/Sprint';
 
 const SCREENS: Record<Route, ComponentType> = {
   home: Dashboard,
@@ -30,10 +31,11 @@ const SCREENS: Record<Route, ComponentType> = {
   'mistake-practice': MistakePractice,
   settings: Settings,
   course: Course,
+  sprint: Sprint,
 };
 
 const TABS: { route: Route; label: string; icon: typeof Home; match: Route[] }[] = [
-  { route: 'home', label: 'Trénink', icon: Home, match: ['home', 'ladder', 'drill', 'monologue', 'roleplay'] },
+  { route: 'home', label: 'Trénink', icon: Home, match: ['home', 'ladder', 'drill', 'monologue', 'roleplay', 'sprint'] },
   { route: 'course', label: 'Učebnice', icon: GraduationCap, match: ['course'] },
   { route: 'vocab', label: 'Slovíčka', icon: BookOpen, match: ['vocab', 'vocab-review'] },
   { route: 'mistakes', label: 'Chyby', icon: AlertCircle, match: ['mistakes', 'mistake-practice'] },

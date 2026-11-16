@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
-import type { AppState, CzenglishWarning, Evaluation, Mistake, Settings, VocabCard } from './types';
+import type { AppState, CzenglishWarning, DayStats, Evaluation, Mistake, Settings, VocabCard } from './types';
 import { newSrs } from './srs';
+import { toast } from './ui';
 
 const KEY = 'ajna-state-v1';
 
@@ -20,10 +21,11 @@ export const defaultSettings: Settings = {
   autoPlayRoleplay: true,
   level: 2,
   focus: null,
+  dailyGoal: 100,
 };
 
 function initial(): AppState {
-  return { version: 1, settings: { ...defaultSettings }, vocab: [], mistakes: [], days: {}, addedPacks: [], levelLog: [] };
+  return { version: 1, settings: { ...defaultSettings }, vocab: [], mistakes: [], days: {}, addedPacks: [], levelLog: [], phraseStats: {} };
 }
 
 function load(): AppState {
@@ -47,6 +49,7 @@ export function normalize(data: unknown): AppState {
     days: d.days && typeof d.days === 'object' ? d.days : {},
     addedPacks: Array.isArray(d.addedPacks) ? d.addedPacks : [],
     levelLog: Array.isArray(d.levelLog) ? d.levelLog : [],
+    phraseStats: d.phraseStats && typeof d.phraseStats === 'object' ? d.phraseStats : {},
   };
 }
 
@@ -106,15 +109,58 @@ export function countWords(text: string) {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
 
-/** Record a spoken/typed answer for streak + words-today stats. */
+export function dayXp(d: DayStats | undefined) {
+  if (!d) return 0;
+  return d.xp ?? d.answers * 10;
+}
+
+export function totalXp(days: Record<string, DayStats>) {
+  return Object.values(days).reduce((a, d) => a + dayXp(d), 0);
+}
+
+/** Player rank from total XP: every rank needs a bit more than the previous one. */
+export function rankOf(xp: number) {
+  let rank = 1;
+  let need = 200;
+  let rest = xp;
+  while (rest >= need) {
+    rest -= need;
+    rank++;
+    need = 200 + (rank - 1) * 100;
+  }
+  const names = ['Začátečník', 'Odvážlivec', 'Mluvka', 'Konverzátor', 'Vypravěč', 'Řečník', 'Diplomat', 'Mistr slova'];
+  return { rank, name: names[Math.min(rank, names.length) - 1], into: rest, need };
+}
+
+function currentRoute() {
+  return location.hash.replace(/^#\/?/, '') || 'home';
+}
+
+/** Add XP to today; celebrates when the daily goal is reached. */
+export function addXp(n: number) {
+  const k = todayKey();
+  const before = dayXp(state.days[k]);
+  setState((s) => {
+    const cur = s.days[k] ?? { words: 0, answers: 0 };
+    return { ...s, days: { ...s.days, [k]: { ...cur, xp: dayXp(cur) + n } } };
+  });
+  const goal = state.settings.dailyGoal;
+  if (before < goal && before + n >= goal) toast(`Denní cíl splněn! +${goal} XP · série ${streak(state.days)} ${streak(state.days) === 1 ? 'den' : 'dní'}`);
+}
+
+/** Record a spoken/typed answer for streak + words-today stats + XP. */
 export function recordSpeech(text: string) {
   const words = countWords(text);
   if (!words) return;
   const k = todayKey();
+  const route = currentRoute();
   setState((s) => {
     const cur = s.days[k] ?? { words: 0, answers: 0 };
-    return { ...s, days: { ...s.days, [k]: { words: cur.words + words, answers: cur.answers + 1 } } };
+    const modes = { ...(cur.modes ?? {}), [route]: (cur.modes?.[route] ?? 0) + 1 };
+    return { ...s, days: { ...s.days, [k]: { ...cur, xp: dayXp(cur), words: cur.words + words, answers: cur.answers + 1, modes } } };
   });
+  // 5 XP for answering + up to 10 for saying more
+  addXp(5 + Math.min(10, Math.floor(words / 2)));
 }
 
 export function streak(days: Record<string, { answers: number }>) {
@@ -203,6 +249,7 @@ export function resetAll() {
 
 /** Remember whether an exercise at the current level was passed (last 40 kept). */
 export function recordLevelResult(ok: boolean) {
+  if (ok) addXp(5);
   setState((s) => ({
     ...s,
     levelLog: [...s.levelLog, { level: s.settings.level, ok, at: new Date().toISOString(), focus: s.settings.focus }].slice(-40),
@@ -217,4 +264,12 @@ export function levelSuggestion(log: AppState['levelLog'], level: number): 'up' 
   if (ok >= 8 && level < 5) return 'up';
   if (ok <= 3 && level > 1) return 'down';
   return null;
+}
+
+export function recordPhrase(id: string, ok: boolean) {
+  setState((s) => {
+    const cur = s.phraseStats[id] ?? { ok: 0, fail: 0, at: '' };
+    return { ...s, phraseStats: { ...s.phraseStats, [id]: { ok: cur.ok + (ok ? 1 : 0), fail: cur.fail + (ok ? 0 : 1), at: new Date().toISOString() } } };
+  });
+  if (ok) addXp(3);
 }

@@ -19,6 +19,8 @@ export interface Settings {
   level: 1 | 2 | 3 | 4 | 5;
   /** grammar topic id every generated sentence should practise (null = mixed) */
   focus: string | null;
+  /** daily XP goal */
+  dailyGoal: number;
 }
 
 export interface SrsState {
@@ -95,6 +97,16 @@ export interface Mistake {
 export interface DayStats {
   words: number;
   answers: number;
+  /** experience points earned that day (older days without it: answers × 10) */
+  xp?: number;
+  /** answers per exercise route */
+  modes?: Record<string, number>;
+}
+
+export interface PhraseStat {
+  ok: number;
+  fail: number;
+  at: string;
 }
 
 export interface AppState {
@@ -106,4 +118,6 @@ export interface AppState {
   addedPacks: string[];
   /** recent pass/fail results per level, used to suggest moving up or down */
   levelLog: { level: number; ok: boolean; at: string; focus?: string | null }[];
+  /** results of the offline phrase sprint, by phrase id */
+  phraseStats: Record<string, PhraseStat>;
 }
