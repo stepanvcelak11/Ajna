@@ -12,12 +12,13 @@ import { Btn, Card, ModeHeader, cx } from './ui';
 
 const GAME_ROUTES = new Set<string>(GAME_LIST.flatMap((c) => c.games.map((g) => g.route)));
 
-export function GameHeader({ title, subtitle, i, total, combo }: { title: string; subtitle?: string; i: number; total: number; combo: number }) {
+export function GameHeader({ title, subtitle, i, total, combo, onBack }: { title: string; subtitle?: string; i: number; total: number; combo: number; onBack?: () => void }) {
   return (
     <>
       <ModeHeader
         title={title}
         subtitle={subtitle}
+        onBack={onBack}
         right={
           combo >= 2 ? (
             <span
@@ -151,7 +152,7 @@ export function GameEnd({
       )}
       {onContinue && (
         <Btn variant="primary" className="h-12 w-full text-base" onClick={onContinue}>
-          Pokračovat na cestě
+          {route === 'path' ? 'Pokračovat na cestě' : 'Pokračovat'}
         </Btn>
       )}
       <div className="flex gap-2 pt-1">

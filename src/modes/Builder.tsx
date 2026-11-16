@@ -84,7 +84,7 @@ export default function Builder({ phrases, onDone, onContinue }: { phrases?: Phr
   if (!t)
     return (
       <div>
-        <GameHeader title="Skládání vět" i={tasks.length} total={tasks.length} combo={0} />
+        <GameHeader onBack={onContinue} title="Skládání vět" i={tasks.length} total={tasks.length} combo={0} />
         <GameEnd score={score} total={tasks.length} xp={xp} best={result?.best} extra="vět složených bez chyby" onAgain={() => setRound((r) => r + 1)} onContinue={onContinue} />
       </div>
     );
@@ -138,7 +138,7 @@ export default function Builder({ phrases, onDone, onContinue }: { phrases?: Phr
 
   return (
     <div>
-      <GameHeader title="Skládání vět" subtitle="Slož anglickou větu ze slov" i={i} total={tasks.length} combo={combo} />
+      <GameHeader onBack={onContinue} title="Skládání vět" subtitle="Slož anglickou větu ze slov" i={i} total={tasks.length} combo={combo} />
 
       <Card key={i} className="mb-4 animate-up">
         <Label className="flex items-center gap-1.5">

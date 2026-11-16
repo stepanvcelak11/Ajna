@@ -60,7 +60,7 @@ export default function Listen({ phrases, onDone, onContinue }: { phrases?: Phra
   if (!ttsSupported)
     return (
       <div>
-        <GameHeader title="Poslech" i={0} total={1} combo={0} />
+        <GameHeader onBack={onContinue} title="Poslech" i={0} total={1} combo={0} />
         <Card className="text-sm text-muted">Tento prohlížeč neumí přehrávat řeč, poslech tu bohužel nejde.</Card>
       </div>
     );
@@ -68,7 +68,7 @@ export default function Listen({ phrases, onDone, onContinue }: { phrases?: Phra
   if (!p)
     return (
       <div>
-        <GameHeader title="Poslech" i={items.length} total={items.length} combo={0} />
+        <GameHeader onBack={onContinue} title="Poslech" i={items.length} total={items.length} combo={0} />
         <GameEnd score={score} total={items.length} xp={xp} best={result?.best} icon="mic" tone="sky" extra="vět správně zachycených" onAgain={() => setRound((r) => r + 1)} onContinue={onContinue} />
       </div>
     );
@@ -99,7 +99,7 @@ export default function Listen({ phrases, onDone, onContinue }: { phrases?: Phra
 
   return (
     <div>
-      <GameHeader title="Poslech" subtitle="Poslechni si a zopakuj nebo napiš" i={i} total={items.length} combo={combo} />
+      <GameHeader onBack={onContinue} title="Poslech" subtitle="Poslechni si a zopakuj nebo napiš" i={i} total={items.length} combo={combo} />
 
       <Card key={i} className="mb-4 flex flex-col items-center gap-4 py-6 animate-up">
         <Label>Co zaznělo?</Label>

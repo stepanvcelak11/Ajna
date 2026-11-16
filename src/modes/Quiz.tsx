@@ -149,7 +149,7 @@ export default function Quiz({ words, title = 'Kvíz', onDone, onContinue }: { w
   if (bank.length < 8)
     return (
       <div>
-        <GameHeader title="Kvíz" i={0} total={1} combo={0} />
+        <GameHeader onBack={onContinue} title="Kvíz" i={0} total={1} combo={0} />
         <Card className="space-y-3 text-center">
           <div className="text-sm text-muted">Na kvíz potřebuješ aspoň 8 slovíček. Přidej si balíček.</div>
           <Btn variant="primary" onClick={() => navigate('vocab')}>
@@ -162,7 +162,7 @@ export default function Quiz({ words, title = 'Kvíz', onDone, onContinue }: { w
   if (!q)
     return (
       <div>
-        <GameHeader title={title} i={qs.length} total={qs.length} combo={0} />
+        <GameHeader onBack={onContinue} title={title} i={qs.length} total={qs.length} combo={0} />
         <GameEnd score={score} total={qs.length} xp={xp} best={result?.best} extra={`nejdelší série ${best}×`} onAgain={() => setRound((r) => r + 1)} onContinue={onContinue}>
           {wrong.length > 0 && (
             <div className="space-y-2 text-left">
@@ -195,7 +195,7 @@ export default function Quiz({ words, title = 'Kvíz', onDone, onContinue }: { w
 
   return (
     <div>
-      <GameHeader title={title} subtitle={`${score} správně · ${xp} XP`} i={i} total={qs.length} combo={combo} />
+      <GameHeader onBack={onContinue} title={title} subtitle={`${score} správně · ${xp} XP`} i={i} total={qs.length} combo={combo} />
       <div className="mb-3 h-1 overflow-hidden rounded-full bg-surface-2">
         <div
           className={cx('h-full transition-[width] duration-100 ease-linear', left > SECONDS / 2 ? 'bg-emerald-500' : left > 3 ? 'bg-amber-500' : 'bg-red-500')}

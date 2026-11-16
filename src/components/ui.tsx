@@ -92,13 +92,13 @@ export function ErrorBox({ error, onRetry }: { error: string; onRetry?: () => vo
   );
 }
 
-export function ModeHeader({ title, subtitle, right, below }: { title: string; subtitle?: string; right?: ReactNode; below?: ReactNode }) {
+export function ModeHeader({ title, subtitle, right, below, onBack }: { title: string; subtitle?: string; right?: ReactNode; below?: ReactNode; onBack?: () => void }) {
   return (
     <div className="mb-5 space-y-3">
       <div className="flex items-center gap-2">
         <button
           aria-label="Zpět"
-          onClick={() => (history.length > 1 ? history.back() : navigate('home'))}
+          onClick={() => (onBack ? onBack() : history.length > 1 ? history.back() : navigate('home'))}
           className="size-10 -ml-2 grid place-items-center rounded-xl text-muted hover:text-fg hover:bg-surface-2"
         >
           <ArrowLeft className="size-5" />

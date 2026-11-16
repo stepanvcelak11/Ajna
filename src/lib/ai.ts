@@ -347,6 +347,8 @@ export interface Story {
   sentences: { en: string; cz: string }[];
   questions: { q: string; options: string[]; a: number }[];
   retell_cz: string;
+  /** key words / phrases from the story with Czech meaning, for practice */
+  words?: { en: string; cz: string }[];
 }
 
 export async function generateStory(topic: string): Promise<Story> {
@@ -362,20 +364,23 @@ Natural English a native speaker would write; a clear beginning, a small problem
 - title: short English title; title_cz: Czech translation of the title.
 - sentences: [{en, cz}] where cz is a natural Czech translation of that sentence.
 - questions: 3 comprehension questions in simple English, each with 3 short options and "a" = index of the correct option. Answers must be clearly in the text.
-- retell_cz: Czech instruction asking the learner to retell the story in ${level.id <= 2 ? '2-3 short' : '3-5'} English sentences.`,
+- retell_cz: Czech instruction asking the learner to retell the story in ${level.id <= 2 ? '2-3 short' : '3-5'} English sentences.
+- words: 6-9 useful words or short phrases that appear EXACTLY (same form) in the sentences, each with a short Czech meaning: [{en, cz}].`,
     schema: obj({
       title: str,
       title_cz: str,
       sentences: arr(obj({ en: str, cz: str })),
       questions: arr(obj({ q: str, options: arr(str), a: { type: 'integer' } })),
       retell_cz: str,
+      words: arr(obj({ en: str, cz: str })),
     }),
-    maxTokens: 3000,
+    maxTokens: 3500,
   });
   return {
     ...st,
     sentences: (st.sentences ?? []).filter((s) => s?.en),
     questions: (st.questions ?? []).filter((q) => q?.options?.length >= 2 && q.a >= 0 && q.a < q.options.length),
+    words: (st.words ?? []).filter((w) => w?.en && w?.cz),
   };
 }
 

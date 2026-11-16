@@ -1,7 +1,8 @@
 // A few original built-in stories so reading also works offline. AI generates new ones on demand.
 import type { Story } from '../lib/ai';
+import { MORE_STORIES } from './stories2';
 
-export const BUILTIN_STORIES: (Story & { id: string; level: number })[] = [
+const BASE: (Story & { id: string; level: number })[] = [
   {
     id: 'cat',
     level: 1,
@@ -21,6 +22,15 @@ export const BUILTIN_STORIES: (Story & { id: string; level: number })[] = [
       { q: 'Where is Mia?', options: ['in the bag', 'in the garden', 'in the bed'], a: 0 },
     ],
     retell_cz: 'Převyprávěj příběh anglicky ve 2–3 krátkých větách.',
+    words: [
+      { en: 'small', cz: 'malý' },
+      { en: 'kitchen', cz: 'kuchyně' },
+      { en: 'garden', cz: 'zahrada' },
+      { en: 'sad', cz: 'smutný' },
+      { en: 'call', cz: 'volat' },
+      { en: 'laughs', cz: 'směje se' },
+      { en: 'bag', cz: 'taška' },
+    ],
   },
   {
     id: 'train',
@@ -43,6 +53,15 @@ export const BUILTIN_STORIES: (Story & { id: string; level: number })[] = [
       { q: 'How did the friend get there?', options: ['by train', 'by bus', 'by car'], a: 2 },
     ],
     retell_cz: 'Převyprávěj příběh anglicky ve 2–3 větách v minulém čase.',
+    words: [
+      { en: 'visit', cz: 'navštívit' },
+      { en: 'got up', cz: 'vstal' },
+      { en: 'station', cz: 'nádraží' },
+      { en: 'platform', cz: 'nástupiště' },
+      { en: 'conductor', cz: 'průvodčí' },
+      { en: 'ticket', cz: 'jízdenka' },
+      { en: 'in the end', cz: 'nakonec' },
+    ],
   },
   {
     id: 'interview',
@@ -67,8 +86,20 @@ export const BUILTIN_STORIES: (Story & { id: string; level: number })[] = [
       { q: 'What happened in the end?', options: ['He failed the interview.', 'He got the job.', 'He went home early.'], a: 1 },
     ],
     retell_cz: 'Převyprávěj příběh anglicky ve 3–5 větách. Zkus použít „it turned out that“.',
+    words: [
+      { en: 'looking for', cz: 'hledat' },
+      { en: 'prepared', cz: 'připravil' },
+      { en: 'dropped', cz: 'upustil, vypadl mu' },
+      { en: 'out of breath', cz: 'udýchaný' },
+      { en: 'ruined', cz: 'pokazil' },
+      { en: 'owner', cz: 'majitel' },
+      { en: 'stranger', cz: 'cizí člověk' },
+      { en: 'instead', cz: 'místo toho' },
+    ],
   },
 ];
+
+export const BUILTIN_STORIES = [...BASE, ...MORE_STORIES].sort((a, b) => a.level - b.level);
 
 export const STORY_TOPICS = [
   { en: 'a funny mistake at a restaurant', cz: 'Vtipný omyl v restauraci', icon: 'plate', tone: 'orange' },

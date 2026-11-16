@@ -22,6 +22,8 @@ export const GAME_LIST: { title: string; games: GameDef[] }[] = [
       { route: 'quiz', id: 'quiz', title: 'Kvíz', desc: '12 otázek na čas', icon: 'medal', bg: 'from-violet-500 to-indigo-600' },
       { route: 'blitz', id: 'blitz', title: 'Blesk', desc: '60 s: sedí význam?', icon: 'bolt', bg: 'from-yellow-400 to-orange-500', isNew: true },
       { route: 'match', id: 'match', title: 'Párování', desc: 'Spoj dvojice na čas', icon: 'sparkle', bg: 'from-pink-500 to-fuchsia-600' },
+      { route: 'wordsearch', id: 'wordsearch', title: 'Osmisměrka', desc: 'Najdi slova v mřížce', icon: 'target', bg: 'from-emerald-500 to-lime-600', isNew: true },
+      { route: 'crossword', id: 'crossword', title: 'Křížovka', desc: 'Česká nápověda → anglicky', icon: 'layers', bg: 'from-rose-500 to-orange-500', isNew: true },
       { route: 'cards', id: 'cards', title: 'Kartičky', desc: 'Otoč a švihni', icon: 'layers', bg: 'from-purple-500 to-violet-700' },
     ],
   },
