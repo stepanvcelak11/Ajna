@@ -56,6 +56,32 @@ export default function App() {
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0b0b0f' : '#fafafa');
   }, [theme]);
 
+  // iPhone home-screen app: after the keyboard closes, iOS sometimes leaves the page shifted
+  // (bottom bar floating mid-screen). Nudge the viewport back once nothing is being typed.
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const fix = () => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        if (isTypingTarget(document.activeElement)) return;
+        window.scrollTo(window.scrollX, window.scrollY);
+        document.documentElement.style.height = '100.1%';
+        requestAnimationFrame(() => (document.documentElement.style.height = ''));
+      }, 120);
+    };
+    window.addEventListener('focusout', fix);
+    window.visualViewport?.addEventListener('resize', fix);
+    window.addEventListener('orientationchange', fix);
+    document.addEventListener('visibilitychange', fix);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('focusout', fix);
+      window.visualViewport?.removeEventListener('resize', fix);
+      window.removeEventListener('orientationchange', fix);
+      document.removeEventListener('visibilitychange', fix);
+    };
+  }, []);
+
   // global hotkeys R / S
   useEffect(() => {
     const h = (e: KeyboardEvent) => {

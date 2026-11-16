@@ -1,4 +1,4 @@
-import { Hand, LifeBuoy, Mic, MicOff, Send, Trash2 } from 'lucide-react';
+import { Hand, Keyboard, LifeBuoy, Mic, MicOff, Send, Trash2 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { sttSupported, useSpeechRecognition } from '../lib/speech';
 import { recordSpeech, updateSettings, useStore } from '../lib/store';
@@ -40,6 +40,12 @@ export function MicRecorder({
   const listeningRef = useRef(sr.listening);
   listeningRef.current = sr.listening;
   const pttHeld = useRef(false);
+  const taRef = useRef<HTMLTextAreaElement>(null);
+  // switch to typing / the phone keyboard's own dictation (always works on iPhone)
+  const useKeyboard = () => {
+    sr.stop();
+    setTimeout(() => taRef.current?.focus(), 50);
+  };
 
   // reset on new exercise
   useEffect(() => {
@@ -128,6 +134,7 @@ export function MicRecorder({
     <div className="space-y-3">
       <div className="relative">
         <textarea
+          ref={taRef}
           data-recorder="true"
           value={sr.text}
           readOnly={sr.listening}
@@ -155,7 +162,17 @@ export function MicRecorder({
         <span className="ml-auto hidden sm:inline text-[10px] opacity-70">Ctrl+K</span>
       </button>
 
-      {sr.error && <div className="text-xs text-red-500">{sr.error}</div>}
+      {(sr.stalled || sr.error) && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/8 px-3 py-2.5 text-xs space-y-2">
+          <div className={sr.error ? 'text-red-500' : ''}>
+            {sr.error ?? 'Nic neslyším. Mikrofon se restartoval, zkus mluvit znovu a trochu hlasitěji.'}
+          </div>
+          <button onClick={useKeyboard} className="inline-flex items-center gap-1.5 font-semibold text-accent">
+            <Keyboard className="size-3.5" /> Diktovat přes klávesnici
+          </button>
+          <div className="text-[11px] text-muted">Na klávesnici telefonu ťukni na ikonu mikrofonu vpravo dole a mluv.</div>
+        </div>
+      )}
       {!sttSupported && (
         <div className="text-xs text-muted">
           Rozpoznávání řeči tu není dostupné – použij diktování na klávesnici telefonu (ikona mikrofonu) a piš do pole.
@@ -212,6 +229,13 @@ export function MicRecorder({
               className="rounded-md border border-line px-1.5 py-0.5 text-[10px] text-muted hover:text-fg"
             >
               {accent === 'en-US' ? 'Přízvuk US' : 'Přízvuk UK'}
+            </button>
+            <button
+              onClick={useKeyboard}
+              aria-label="Psát nebo diktovat klávesnicí"
+              className="rounded-md border border-line p-0.5 px-1 text-muted hover:text-fg"
+            >
+              <Keyboard className="size-3" />
             </button>
             {sr.text && !sr.listening && (
               <button

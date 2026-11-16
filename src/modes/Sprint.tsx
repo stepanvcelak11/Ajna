@@ -7,7 +7,7 @@ import { Btn, Card, Label, ModeHeader, cx } from '../components/ui';
 import { PHRASES, phrasesFor, type Phrase } from '../data/phrases';
 import { getLevel } from '../data/levels';
 import { navigate } from '../lib/router';
-import { speak } from '../lib/speech';
+import { IS_IOS, speak } from '../lib/speech';
 import { addVocab, getState, hasVocab, recordPhrase, useStore } from '../lib/store';
 import { isTypingTarget, toast } from '../lib/ui';
 import { checkPhrase, sameWord, words, type Verdict } from '../lib/match';
@@ -94,7 +94,8 @@ export default function Sprint() {
       // one more go at the end of the round
       setQueue((q) => (q.slice(i + 1).some((x) => x.id === p.id) ? q : [...q, p]));
     }
-    speak(r.verdict === 'ok' ? r.target : p.en);
+    // iPhone: playing audio right before recording often leaves the microphone deaf, so play on tap only
+    if (!IS_IOS) speak(r.verdict === 'ok' ? r.target : p.en);
   };
 
   const override = () => {

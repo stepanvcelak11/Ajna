@@ -19,6 +19,12 @@ export type MicStatus = 'idle' | 'starting' | 'ready' | 'hearing';
 // errors after which restarting makes no sense
 const FATAL = new Set(['not-allowed', 'service-not-allowed', 'network', 'audio-capture', 'language-not-supported', 'bad-grammar']);
 const START_TIMEOUT_MS = 3000;
+// a session that is "listening" but delivers no words for this long gets recycled
+const STALL_MS = 7000;
+
+export const IS_IOS =
+  typeof navigator !== 'undefined' &&
+  (/iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
 
 /**
  * Continuous recognition that survives pauses and flaky mobile browsers.
@@ -38,6 +44,10 @@ export function useSpeechRecognition() {
   const [committed, setCommitted] = useState('');
   const [interim, setInterim] = useState('');
   const [error, setError] = useState<string | null>(null);
+  /** the engine runs but keeps hearing nothing (typical iPhone glitch) */
+  const [stalled, setStalled] = useState(false);
+  const stallsRef = useRef(0);
+  const stallTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const recRef = useRef<any>(null);
   const wantRef = useRef(false);
@@ -54,6 +64,8 @@ export function useSpeechRecognition() {
   };
 
   const clearTimers = () => {
+    if (stallTimerRef.current) clearTimeout(stallTimerRef.current);
+    stallTimerRef.current = null;
     if (watchdogRef.current) clearTimeout(watchdogRef.current);
     if (restartTimerRef.current) clearTimeout(restartTimerRef.current);
     watchdogRef.current = null;
@@ -81,6 +93,7 @@ export function useSpeechRecognition() {
     }
     setListening(false);
     setStatus('idle');
+    setStalled(false);
     if (msg) setError(msg);
   };
 
@@ -88,7 +101,8 @@ export function useSpeechRecognition() {
     if (!SR || !wantRef.current) return;
     const rec = new SR();
     rec.lang = getState().settings.accent;
-    rec.continuous = true;
+    // iPhone: one utterance per session is far more reliable than continuous mode
+    rec.continuous = !IS_IOS;
     rec.interimResults = true;
     rec.maxAlternatives = 1;
     let started = false;
@@ -101,6 +115,18 @@ export function useSpeechRecognition() {
       failedStartsRef.current = 0;
       if (watchdogRef.current) clearTimeout(watchdogRef.current);
       setStatus((s) => (s === 'hearing' ? s : 'ready'));
+      // Stall guard: if this session delivers no words at all, throw it away and start a fresh one.
+      if (stallTimerRef.current) clearTimeout(stallTimerRef.current);
+      stallTimerRef.current = setTimeout(() => {
+        if (!mine() || gotResult) return;
+        stallsRef.current++;
+        if (stallsRef.current >= 2) setStalled(true);
+        try {
+          rec.abort(); // onend restarts a new session
+        } catch {
+          /* ignore */
+        }
+      }, STALL_MS);
     };
     rec.onstart = onStarted;
     rec.onaudiostart = onStarted;
@@ -111,6 +137,9 @@ export function useSpeechRecognition() {
       if (!mine()) return;
       onStarted();
       gotResult = true;
+      stallsRef.current = 0;
+      setStalled(false);
+      if (stallTimerRef.current) clearTimeout(stallTimerRef.current);
       let finalText = '';
       let interimText = '';
       for (let i = 0; i < e.results.length; i++) {
@@ -203,8 +232,13 @@ export function useSpeechRecognition() {
       return;
     }
     setError(null);
+    setStalled(false);
+    stallsRef.current = 0;
     clearTimers();
     failedStartsRef.current = 0;
+    // a focused text field keeps the iPhone keyboard layout around; release it
+    const el = document.activeElement as HTMLElement | null;
+    if (el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')) el.blur();
     quickEndsRef.current = [];
     // drop any old (possibly stuck) session
     const old = recRef.current;
@@ -225,7 +259,8 @@ export function useSpeechRecognition() {
     window.speechSynthesis?.cancel();
     // Start right away (inside the tap, which iOS requires); if audio was playing or an old
     // session was just aborted, give the device a moment to release the audio first.
-    if (speaking || old) restartTimerRef.current = setTimeout(startSession, 300);
+    // iPhone only starts the microphone inside the tap itself, so never delay there.
+    if (!IS_IOS && (speaking || old)) restartTimerRef.current = setTimeout(startSession, 300);
     else startSession();
   }, [startSession]);
 
@@ -246,6 +281,7 @@ export function useSpeechRecognition() {
     } else finish();
     setListening(false);
     setStatus('idle');
+    setStalled(false);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const reset = useCallback((text = '') => {
@@ -287,7 +323,7 @@ export function useSpeechRecognition() {
   );
 
   const text = joinText(committed, interim);
-  return { listening, status, text, committed, interim, error, start, stop, reset, setText: reset };
+  return { listening, status, stalled, text, committed, interim, error, start, stop, reset, setText: reset };
 }
 
 // ---------------- Text-to-speech ----------------
