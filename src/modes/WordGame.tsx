@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AnswerBox, HeardAs, ModeBadge, ModePicker, type InputMode } from '../components/answer';
 import { GameEnd, GameHeader } from '../components/game';
 import { LangBadge } from '../components/icons';
-import { SpeakButton } from '../components/Speak';
+import { SoundHint, SpeakButton } from '../components/Speak';
 import { Btn, Card, ExampleText, Label, cx } from '../components/ui';
 import { plainExample, sample, shortCz, wordBank, type Word } from '../data/wordbank';
 import { words } from '../lib/match';
@@ -186,6 +186,7 @@ export default function WordGame({ kind = 'translate' }: { kind?: 'translate' | 
             </button>
           </div>
         ) : null}
+        {kind === 'spell' && !res && <SoundHint />}
         <div className={cx('font-bold leading-snug', kind === 'spell' ? 'text-center text-base text-muted' : 'text-3xl')}>{shortCz(q.cz)}</div>
         {kind === 'translate' && q.example.includes('{') && (
           <div className="text-sm text-muted">

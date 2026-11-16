@@ -2,7 +2,7 @@ import { Check, ChevronRight, Snail, Volume2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { GameEnd, GameHeader } from '../components/game';
 import { AnswerBox, HeardAs, ModeBadge, ModePicker, type InputMode } from '../components/answer';
-import { SpeakButton } from '../components/Speak';
+import { SoundHint, SpeakButton } from '../components/Speak';
 import { Btn, Card, Label, cx } from '../components/ui';
 import { phraseBank, sample, shuffle } from '../data/wordbank';
 import type { Phrase } from '../data/phrases';
@@ -139,6 +139,7 @@ export default function Listen({ phrases, onDone, onContinue }: { phrases?: Phra
           </button>
         </div>
         <div className="text-xs text-muted">{plays <= 1 ? 'Napoprvé = bonus XP' : `Přehráno ${plays}×`}</div>
+        {!res && <SoundHint />}
 
         {res && (
           <div className="w-full space-y-2 border-t border-line pt-4 text-center animate-up">

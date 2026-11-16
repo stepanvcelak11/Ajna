@@ -362,21 +362,66 @@ function pickVoice(lang: string) {
 
 export const ttsSupported = typeof window !== 'undefined' && !!window.speechSynthesis;
 
+// Called when speech output seems blocked (e.g. iPhone in silent mode), so the UI can explain it.
+let onSilent: (() => void) | null = null;
+export function setSilentHandler(h: (() => void) | null) {
+  onSilent = h;
+}
+
+// iPhone: speech output only works after it was started once inside a tap. Do that on the first tap anywhere.
+let unlocked = false;
+function unlock() {
+  if (unlocked || !ttsSupported) return;
+  unlocked = true;
+  try {
+    const u = new SpeechSynthesisUtterance(' ');
+    u.volume = 0;
+    window.speechSynthesis.speak(u);
+  } catch {
+    /* ignore */
+  }
+}
+if (typeof window !== 'undefined' && ttsSupported) {
+  window.addEventListener('pointerdown', unlock, { once: true, capture: true });
+  window.addEventListener('keydown', unlock, { once: true, capture: true });
+}
+
+let seq = 0;
 export function speak(text: string, opts: { rate?: number; onEnd?: () => void } = {}) {
   if (!ttsSupported || !text) return;
   const clean = text.replace(/[{}]/g, '');
   const s = getState().settings;
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(clean);
-  u.lang = s.accent;
-  const v = pickVoice(s.accent);
-  if (v) u.voice = v;
-  u.rate = opts.rate ?? s.ttsRate;
-  if (opts.onEnd) {
-    u.onend = opts.onEnd;
-    u.onerror = opts.onEnd;
-  }
-  window.speechSynthesis.speak(u);
+  const synth = window.speechSynthesis;
+  const id = ++seq;
+  const busy = synth.speaking || synth.pending;
+  if (busy) synth.cancel();
+  const go = () => {
+    if (id !== seq) return;
+    // Safari sometimes leaves the engine paused; resume() is harmless otherwise
+    synth.resume();
+    const u = new SpeechSynthesisUtterance(clean);
+    u.lang = s.accent;
+    const v = pickVoice(s.accent);
+    if (v) u.voice = v;
+    u.rate = opts.rate ?? s.ttsRate;
+    u.volume = 1;
+    let started = false;
+    u.onstart = () => {
+      started = true;
+    };
+    if (opts.onEnd) {
+      u.onend = opts.onEnd;
+      u.onerror = opts.onEnd;
+    }
+    synth.speak(u);
+    // nothing started → probably blocked (silent mode, no gesture yet); tell the UI once in a while
+    setTimeout(() => {
+      if (!started && id === seq && !synth.speaking) onSilent?.();
+    }, 2500);
+  };
+  // speaking right after cancel() is silently dropped by Safari, so give it a moment
+  if (busy) setTimeout(go, 120);
+  else go();
 }
 
 export function stopSpeaking() {

@@ -1,6 +1,6 @@
 import { Square, Volume2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { speak, stopSpeaking, ttsSupported } from '../lib/speech';
+import { IS_IOS, speak, stopSpeaking, ttsSupported } from '../lib/speech';
 import { updateSettings, useStore } from '../lib/store';
 import { cx } from './ui';
 
@@ -42,5 +42,15 @@ export function SpeakButton({ text, compact, className }: { text: string; compac
         </button>
       )}
     </span>
+  );
+}
+
+/** Small help line for listening games: the usual reason for "no voice" on iPhone. */
+export function SoundHint() {
+  if (!ttsSupported) return null;
+  return (
+    <div className="text-center text-[11px] leading-snug text-muted">
+      Neslyšíš hlas? {IS_IOS ? 'Vypni tichý režim (přepínač na boku iPhonu) a zesil hlasitost.' : 'Zesil hlasitost.'} Pak ťukni na reproduktor.
+    </div>
   );
 }

@@ -2,6 +2,7 @@ import { ChevronRight, Volume2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Choice, GameEnd, GameHeader, type ChoiceState } from '../components/game';
 import { Btn, Card, Label } from '../components/ui';
+import { SoundHint } from '../components/Speak';
 import { shuffle } from '../data/wordbank';
 import { sfx } from '../lib/sfx';
 import { speak, ttsSupported } from '../lib/speech';
@@ -230,7 +231,7 @@ export default function Numbers() {
             Pomaleji
           </button>
         </div>
-        {picked && <div className="text-sm text-muted animate-fade">„{q.say}“</div>}
+        {picked ? <div className="text-sm text-muted animate-fade">„{q.say}“</div> : <SoundHint />}
       </Card>
       <div className="grid grid-cols-2 gap-2.5">
         {q.options.map((o) => (

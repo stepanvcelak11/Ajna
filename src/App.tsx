@@ -5,8 +5,8 @@ import { cx } from './components/ui';
 import { navigate, useRoute, type Route } from './lib/router';
 import { isDue } from './lib/srs';
 import { useStore } from './lib/store';
-import { isTypingTarget, runAction, useOnline, useUi } from './lib/ui';
-import { IS_IOS } from './lib/speech';
+import { isTypingTarget, runAction, toast, useOnline, useUi } from './lib/ui';
+import { IS_IOS, setSilentHandler } from './lib/speech';
 import { ACCENTS } from './lib/colors';
 
 // iPhone home-screen app: iOS sometimes keeps the viewport shortened after the keyboard closes,
@@ -169,6 +169,17 @@ export default function App() {
       window.removeEventListener('orientationchange', fix);
       document.removeEventListener('visibilitychange', fix);
     };
+  }, []);
+
+  // speech output did not start (typically iPhone in silent mode) → explain once a minute at most
+  useEffect(() => {
+    let last = 0;
+    setSilentHandler(() => {
+      if (Date.now() - last < 60000) return;
+      last = Date.now();
+      toast(IS_IOS ? 'Neslyšíš hlas? Vypni tichý režim (přepínač na boku) a zesil hlasitost.' : 'Hlas se nespustil. Zkontroluj hlasitost.');
+    });
+    return () => setSilentHandler(null);
   }, []);
 
   // global hotkeys R / S
