@@ -22,6 +22,7 @@ export const defaultSettings: Settings = {
   level: 2,
   focus: null,
   dailyGoal: 100,
+  sttEngine: 'auto',
 };
 
 function initial(): AppState {

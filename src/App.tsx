@@ -6,6 +6,11 @@ import { navigate, useRoute, type Route } from './lib/router';
 import { isDue } from './lib/srs';
 import { useStore } from './lib/store';
 import { isTypingTarget, runAction, useOnline, useUi } from './lib/ui';
+import { IS_IOS } from './lib/speech';
+
+// iPhone home-screen app: iOS sometimes keeps the viewport shortened after the keyboard closes,
+// so fixed `bottom: 0` elements float mid-screen. There we pin them to the full screen height instead.
+const IOS_STANDALONE = IS_IOS && (navigator as unknown as { standalone?: boolean }).standalone === true;
 import Dashboard from './modes/Dashboard';
 import Drill from './modes/Drill';
 import Ladder from './modes/Ladder';
@@ -55,6 +60,26 @@ export default function App() {
     document.documentElement.classList.toggle('dark', theme === 'dark');
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0b0b0f' : '#fafafa');
   }, [theme]);
+
+  useEffect(() => {
+    if (!IOS_STANDALONE) return;
+    const set = () => {
+      const landscape = window.matchMedia('(orientation: landscape)').matches;
+      const full = landscape ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height);
+      // never place the bar below what is actually visible when the keyboard is genuinely open
+      const kb = window.visualViewport && window.visualViewport.height < window.innerHeight - 120;
+      document.documentElement.style.setProperty('--app-h', `${kb ? window.innerHeight : Math.max(full, window.innerHeight)}px`);
+    };
+    set();
+    window.addEventListener('resize', set);
+    window.visualViewport?.addEventListener('resize', set);
+    window.addEventListener('orientationchange', set);
+    return () => {
+      window.removeEventListener('resize', set);
+      window.visualViewport?.removeEventListener('resize', set);
+      window.removeEventListener('orientationchange', set);
+    };
+  }, []);
 
   // iPhone home-screen app: after the keyboard closes, iOS sometimes leaves the page shifted
   // (bottom bar floating mid-screen). Nudge the viewport back once nothing is being typed.
@@ -118,12 +143,16 @@ export default function App() {
       <WordRescue />
 
       {toastMsg && (
-        <div className="fixed left-1/2 -translate-x-1/2 z-[60] bottom-[calc(4.75rem+env(safe-area-inset-bottom))] whitespace-nowrap rounded-full border border-line bg-surface px-4 py-2 text-sm shadow-lg animate-up">
+        <div
+          style={IOS_STANDALONE ? { bottom: 'auto', top: 'calc(var(--app-h, 100%) - 4.75rem - env(safe-area-inset-bottom) - 2.5rem)' } : undefined}
+          className="fixed left-1/2 -translate-x-1/2 z-[60] bottom-[calc(4.75rem+env(safe-area-inset-bottom))] whitespace-nowrap rounded-full border border-line bg-surface px-4 py-2 text-sm shadow-lg animate-up">
           {toastMsg.text}
         </div>
       )}
 
-      <nav className="fixed bottom-0 inset-x-0 z-40 border-t border-line bg-bg/85 backdrop-blur-xl pb-[env(safe-area-inset-bottom)]">
+      <nav
+        style={IOS_STANDALONE ? { bottom: 'auto', top: 'var(--app-h, 100%)', transform: 'translateY(-100%)' } : undefined}
+        className="fixed bottom-0 inset-x-0 z-40 border-t border-line bg-bg/85 backdrop-blur-xl pb-[env(safe-area-inset-bottom)]">
         <div className="mx-auto max-w-xl grid grid-cols-5">
           {TABS.map((t) => {
             const active = t.match.includes(route);

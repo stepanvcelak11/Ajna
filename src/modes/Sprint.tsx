@@ -192,7 +192,7 @@ export default function Sprint() {
     <div>
       <ModeHeader
         title="Rychlé fráze"
-        subtitle={`Úroveň ${lv.id} · ${lv.name} · offline`}
+        subtitle={`Úroveň ${lv.id} · ${lv.name}`}
         right={
           combo >= 2 ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-orange-500/12 px-2.5 py-1 text-xs font-semibold text-orange-600 dark:text-orange-300 animate-up">

@@ -261,6 +261,33 @@ export default function Settings() {
         <div className="text-[11px] text-muted">XP dostáváš za každou odpověď (víc za delší), za splněná cvičení a správné fráze.</div>
       </Card>
 
+      <Card className="space-y-3">
+        <Label>Rozpoznávání řeči</Label>
+        <div className="grid grid-cols-3 gap-2">
+          {(
+            [
+              { v: 'auto', t: 'Automaticky', d: 'iPhone: AI přepis' },
+              { v: 'ai', t: 'AI přepis', d: 'nahrávka → Gemini' },
+              { v: 'browser', t: 'Telefon', d: 'živě, zdarma' },
+            ] as const
+          ).map((o) => (
+            <button
+              key={o.v}
+              onClick={() => set({ sttEngine: o.v })}
+              className={cx('rounded-xl border px-1 py-2.5 text-center', s.sttEngine === o.v ? 'border-accent bg-accent/10 text-accent' : 'border-line bg-surface-2')}
+            >
+              <div className="text-sm font-semibold">{o.t}</div>
+              <div className="text-[10px] text-muted">{o.d}</div>
+            </button>
+          ))}
+        </div>
+        <div className="text-[11px] text-muted leading-relaxed">
+          <b>AI přepis</b> nahraje, co řekneš, a přepíše to tvým klíčem Gemini (nebo OpenAI). Je spolehlivý i na iPhonu a zachová tvoje chyby, jen text naskočí
+          až po dokončení (1–3 s). Potřebuje internet. <b>Telefon</b> používá rozpoznávání prohlížeče: text vidíš živě a funguje i offline, ale na iPhonu často
+          vypadává.
+        </div>
+      </Card>
+
       <Card className="divide-y divide-line py-1.5">
         <Row label="Vzhled">
           <Seg

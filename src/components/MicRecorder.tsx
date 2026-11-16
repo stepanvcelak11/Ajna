@@ -1,6 +1,9 @@
-import { Hand, Keyboard, LifeBuoy, Mic, MicOff, Send, Trash2 } from 'lucide-react';
+import { Hand, Keyboard, LifeBuoy, Loader2, Mic, MicOff, RotateCcw, Send, Sparkles, Trash2 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
-import { sttSupported, useSpeechRecognition } from '../lib/speech';
+import { IS_IOS, sttSupported, useSpeechRecognition } from '../lib/speech';
+import { useAudioRecognition } from '../lib/recorder';
+import { canTranscribe } from '../lib/llm';
+import { useOnline } from '../lib/ui';
 import { recordSpeech, updateSettings, useStore } from '../lib/store';
 import { isTypingTarget, setInsertHandler, setUi } from '../lib/ui';
 import { Btn, cx } from './ui';
@@ -34,7 +37,15 @@ export function MicRecorder({
 }: Props) {
   const micMode = useStore((s) => s.settings.micMode);
   const accent = useStore((s) => s.settings.accent);
-  const sr = useSpeechRecognition();
+  const engine = useStore((s) => s.settings.sttEngine);
+  useStore((s) => s.settings.geminiKey + s.settings.openaiKey);
+  const online = useOnline();
+  const aiPossible = online && canTranscribe() && !!navigator.mediaDevices?.getUserMedia;
+  // iPhone's built-in recognition is unreliable in web apps, so record + AI transcription is the default there
+  const useAi = aiPossible && (engine === 'ai' || (engine === 'auto' && (IS_IOS || !sttSupported)));
+  const browserSr = useSpeechRecognition();
+  const aiSr = useAudioRecognition();
+  const sr = useAi ? aiSr : browserSr;
   const textRef = useRef(sr.text);
   textRef.current = sr.text;
   const listeningRef = useRef(sr.listening);
@@ -49,8 +60,9 @@ export function MicRecorder({
 
   // reset on new exercise
   useEffect(() => {
-    sr.stop();
-    sr.reset(initialText);
+    browserSr.stop();
+    browserSr.reset(initialText);
+    aiSr.reset(initialText);
   }, [resetKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -73,12 +85,20 @@ export function MicRecorder({
     return () => setInsertHandler(null);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const submit = () => {
-    const t = textRef.current.trim();
-    if (!t || busy || disabled) return;
-    sr.stop();
-    recordSpeech(t);
-    onSubmit(t);
+  const submittingRef = useRef(false);
+  const submit = async () => {
+    if (busy || disabled || submittingRef.current) return;
+    submittingRef.current = true;
+    try {
+      // with AI transcription the text only exists after the recording is transcribed
+      const t = (sr.listening || sr.status === 'transcribing' ? await sr.finish() : textRef.current).trim();
+      if (!t) return;
+      sr.stop();
+      recordSpeech(t);
+      onSubmit(t);
+    } finally {
+      submittingRef.current = false;
+    }
   };
   const submitRef = useRef(submit);
   submitRef.current = submit;
@@ -100,7 +120,7 @@ export function MicRecorder({
         const typing = isTypingTarget(e.target);
         if (typing && (e.target as HTMLElement).dataset.recorder !== 'true') return;
         e.preventDefault();
-        submitRef.current();
+        void submitRef.current();
       }
     };
     const up = (e: KeyboardEvent) => {
@@ -137,9 +157,9 @@ export function MicRecorder({
           ref={taRef}
           data-recorder="true"
           value={sr.text}
-          readOnly={sr.listening}
+          readOnly={sr.listening || sr.status === 'transcribing'}
           onChange={(e) => sr.setText(e.target.value)}
-          placeholder={placeholder}
+          placeholder={sr.status === 'transcribing' ? 'Přepisuji, co jsi řekl…' : placeholder}
           rows={3}
           className={cx(
             'w-full resize-none rounded-2xl border bg-surface-2 px-4 py-3 text-[16px] leading-relaxed outline-none transition',
@@ -147,6 +167,11 @@ export function MicRecorder({
             sr.listening ? 'border-accent/60 ring-4 ring-accent/10' : 'border-line',
           )}
         />
+        {sr.status === 'transcribing' && (
+          <div className="absolute right-3 bottom-2 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-accent animate-pulse">
+            <Loader2 className="size-3 animate-spin" /> přepis
+          </div>
+        )}
         {sr.listening && sr.interim && sr.interim !== sr.committed && (
           <div className="absolute right-3 bottom-2 text-[10px] uppercase tracking-wider text-accent animate-pulse">živě</div>
         )}
@@ -167,13 +192,25 @@ export function MicRecorder({
           <div className={sr.error ? 'text-red-500' : ''}>
             {sr.error ?? 'Nic neslyším. Mikrofon se restartoval, zkus mluvit znovu a trochu hlasitěji.'}
           </div>
-          <button onClick={useKeyboard} className="inline-flex items-center gap-1.5 font-semibold text-accent">
-            <Keyboard className="size-3.5" /> Diktovat přes klávesnici
-          </button>
+          <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+            {sr.canRetry && (
+              <button onClick={sr.retry} className="inline-flex items-center gap-1.5 font-semibold text-accent">
+                <RotateCcw className="size-3.5" /> Zkusit přepis znovu
+              </button>
+            )}
+            {!useAi && aiPossible && (
+              <button onClick={() => updateSettings({ sttEngine: 'ai' })} className="inline-flex items-center gap-1.5 font-semibold text-accent">
+                <Sparkles className="size-3.5" /> Přepnout na AI přepis
+              </button>
+            )}
+            <button onClick={useKeyboard} className="inline-flex items-center gap-1.5 font-semibold text-accent">
+              <Keyboard className="size-3.5" /> Diktovat přes klávesnici
+            </button>
+          </div>
           <div className="text-[11px] text-muted">Na klávesnici telefonu ťukni na ikonu mikrofonu vpravo dole a mluv.</div>
         </div>
       )}
-      {!sttSupported && (
+      {!sttSupported && !useAi && (
         <div className="text-xs text-muted">
           Rozpoznávání řeči tu není dostupné – použij diktování na klávesnici telefonu (ikona mikrofonu) a piš do pole.
         </div>
@@ -182,7 +219,7 @@ export function MicRecorder({
       <div className="flex items-center gap-3">
         <button
           type="button"
-          disabled={disabled || !sttSupported}
+          disabled={disabled || (!sttSupported && !useAi) || sr.status === 'transcribing'}
           aria-label={micMode === 'ptt' ? 'Drž a mluv' : sr.listening ? 'Zastavit' : 'Nahrávat'}
           onContextMenu={(e) => e.preventDefault()}
           {...micHandlers}
@@ -196,13 +233,21 @@ export function MicRecorder({
               : 'bg-accent text-white shadow-lg shadow-accent/30',
           )}
         >
-          {sr.listening && sr.status !== 'starting' && <span className="absolute inset-0 rounded-full bg-red-500/40 animate-ping" />}
+          {sr.listening && sr.status !== 'starting' && !useAi && <span className="absolute inset-0 rounded-full bg-red-500/40 animate-ping" />}
+          {sr.listening && useAi && (
+            <span
+              className="absolute inset-0 rounded-full bg-red-500/35 transition-transform duration-100"
+              style={{ transform: `scale(${1 + sr.level * 0.55})` }}
+            />
+          )}
           {sr.listening ? <MicOff className="size-7 relative" /> : <Mic className="size-7" />}
         </button>
 
         <div className="flex-1 min-w-0">
           <div className="text-xs text-muted leading-snug">
-            {sr.listening ? (
+            {sr.status === 'transcribing' ? (
+              <span className="text-accent font-medium">Přepisuji…</span>
+            ) : sr.listening ? (
               sr.status === 'starting' ? (
                 <span className="text-amber-600 dark:text-amber-400">Zapínám mikrofon… chvilku počkej</span>
               ) : sr.status === 'hearing' ? (
@@ -210,13 +255,13 @@ export function MicRecorder({
               ) : micMode === 'ptt' ? (
                 'Mluv… pusť pro pauzu na přemýšlení'
               ) : (
-                'Poslouchám, mluv. Klidně se zastav a přemýšlej.'
+                useAi ? 'Nahrávám, mluv. Pak ťukni znovu nebo rovnou Ověřit.' : 'Poslouchám, mluv. Klidně se zastav a přemýšlej.'
               )
             ) : (
               hint ?? (micMode === 'ptt' ? 'Drž tlačítko a mluv' : 'Ťukni a mluv')
             )}
           </div>
-          <div className="mt-1 flex items-center gap-1.5">
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
             <button
               onClick={() => updateSettings({ micMode: micMode === 'ptt' ? 'toggle' : 'ptt' })}
               className="inline-flex items-center gap-1 rounded-md border border-line px-1.5 py-0.5 text-[10px] text-muted hover:text-fg"
@@ -230,6 +275,17 @@ export function MicRecorder({
             >
               {accent === 'en-US' ? 'Přízvuk US' : 'Přízvuk UK'}
             </button>
+            {aiPossible && (
+              <button
+                onClick={() => updateSettings({ sttEngine: useAi ? 'browser' : 'ai' })}
+                className={cx(
+                  'inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px]',
+                  useAi ? 'border-accent/50 text-accent' : 'border-line text-muted hover:text-fg',
+                )}
+              >
+                <Sparkles className="size-3" /> {useAi ? 'AI přepis' : 'Přepis telefonu'}
+              </button>
+            )}
             <button
               onClick={useKeyboard}
               aria-label="Psát nebo diktovat klávesnicí"
@@ -249,7 +305,13 @@ export function MicRecorder({
           </div>
         </div>
 
-        <Btn variant="primary" onClick={submit} loading={busy} disabled={!sr.text.trim() || disabled} className="shrink-0">
+        <Btn
+          variant="primary"
+          onClick={() => void submit()}
+          loading={busy || sr.status === 'transcribing'}
+          disabled={(!sr.text.trim() && !(useAi && sr.listening)) || disabled}
+          className="shrink-0"
+        >
           <Send className="size-4" />
           <span className="hidden min-[380px]:inline">{submitLabel}</span>
         </Btn>

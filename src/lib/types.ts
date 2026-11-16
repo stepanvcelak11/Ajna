@@ -21,6 +21,8 @@ export interface Settings {
   focus: string | null;
   /** daily XP goal */
   dailyGoal: number;
+  /** speech-to-text: browser engine, AI transcription of a recording, or automatic choice */
+  sttEngine: 'auto' | 'browser' | 'ai';
 }
 
 export interface SrsState {

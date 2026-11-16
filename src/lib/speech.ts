@@ -14,7 +14,7 @@ function joinText(a: string, b: string) {
   return `${a.trimEnd()} ${b.trim()}`;
 }
 
-export type MicStatus = 'idle' | 'starting' | 'ready' | 'hearing';
+export type MicStatus = 'idle' | 'starting' | 'ready' | 'hearing' | 'transcribing';
 
 // errors after which restarting makes no sense
 const FATAL = new Set(['not-allowed', 'service-not-allowed', 'network', 'audio-capture', 'language-not-supported', 'bad-grammar']);
@@ -101,8 +101,7 @@ export function useSpeechRecognition() {
     if (!SR || !wantRef.current) return;
     const rec = new SR();
     rec.lang = getState().settings.accent;
-    // iPhone: one utterance per session is far more reliable than continuous mode
-    rec.continuous = !IS_IOS;
+    rec.continuous = true;
     rec.interimResults = true;
     rec.maxAlternatives = 1;
     let started = false;
@@ -120,6 +119,11 @@ export function useSpeechRecognition() {
       stallTimerRef.current = setTimeout(() => {
         if (!mine() || gotResult) return;
         stallsRef.current++;
+        // iPhone ignores restarts that are not a tap, so just tell the user
+        if (IS_IOS) {
+          setStalled(true);
+          return;
+        }
         if (stallsRef.current >= 2) setStalled(true);
         try {
           rec.abort(); // onend restarts a new session
@@ -174,7 +178,9 @@ export function useSpeechRecognition() {
     rec.onend = () => {
       if (!mine()) return;
       flushSession();
-      if (!wantRef.current) {
+      if (!wantRef.current || IS_IOS) {
+        // iPhone: a restart outside a tap is ignored, so end here; the next tap continues the text
+        wantRef.current = false;
         recRef.current = null;
         clearTimers();
         setListening(false);
@@ -323,7 +329,13 @@ export function useSpeechRecognition() {
   );
 
   const text = joinText(committed, interim);
-  return { listening, status, stalled, text, committed, interim, error, start, stop, reset, setText: reset };
+  const finishText = useCallback(() => {
+    const t = joinText(committedRef.current, sessionTextRef.current);
+    stop();
+    return Promise.resolve(t);
+  }, [stop]);
+
+  return { listening, status, stalled, text, committed, interim, error, level: 0, canRetry: false, retry: () => {}, start, stop, finish: finishText, reset, setText: reset };
 }
 
 // ---------------- Text-to-speech ----------------

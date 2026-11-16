@@ -229,3 +229,91 @@ export async function callJson<T>(opts: CallOpts): Promise<T> {
     clearTimeout(timer);
   }
 }
+
+// ---------------- Speech-to-text via AI (used on iPhone, where the browser engine is unreliable) ----------------
+
+const TRANSCRIBE_PROMPT =
+  'This is a short recording of a Czech learner speaking English. Transcribe EXACTLY what they say, word for word. ' +
+  'Keep every grammar mistake and wrong word, do NOT correct or improve anything. Skip only "uh/um". ' +
+  'If they say a Czech word, write it as they said it. If there is no clear speech, return an empty string. ' +
+  'Return only the transcript, without quotes or comments.';
+
+export function canTranscribe() {
+  const s = getState().settings;
+  return !!(s.geminiKey.trim() || s.openaiKey.trim());
+}
+
+function toBase64(buf: ArrayBuffer) {
+  const bytes = new Uint8Array(buf);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+
+async function transcribeGemini(wav: Blob, signal: AbortSignal, model?: string): Promise<string> {
+  const s = getState().settings;
+  const m = (model ?? (s.geminiModel || GEMINI_DEFAULT)).replace(/^models\//, '');
+  const ti = thinkingIdx.get(m) ?? 0;
+  const thinkingConfig = THINKING_OPTIONS[ti];
+  const res = await fetch(`${GEMINI_BASE}/models/${encodeURIComponent(m)}:generateContent`, {
+    method: 'POST',
+    signal,
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': s.geminiKey.trim() },
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts: [{ inlineData: { mimeType: 'audio/wav', data: toBase64(await wav.arrayBuffer()) } }, { text: TRANSCRIBE_PROMPT }] }],
+      generationConfig: { maxOutputTokens: 2000, temperature: 0, ...(thinkingConfig ? { thinkingConfig } : {}) },
+    }),
+  });
+  if (!res.ok) {
+    const msg = await errText(res);
+    if (res.status === 400 && /thinking/i.test(msg) && ti < THINKING_OPTIONS.length - 1) {
+      thinkingIdx.set(m, ti + 1);
+      return transcribeGemini(wav, signal, m);
+    }
+    if (!model && (res.status === 404 || res.status === 400) && /no longer available|not found|not supported|deprecated/i.test(msg) && m !== GEMINI_DEFAULT)
+      return transcribeGemini(wav, signal, GEMINI_DEFAULT);
+    throw new LlmError(msg);
+  }
+  const data = await res.json();
+  return (data.candidates?.[0]?.content?.parts ?? [])
+    .filter((p: { thought?: boolean }) => !p.thought)
+    .map((p: { text?: string }) => p.text ?? '')
+    .join('')
+    .trim();
+}
+
+async function transcribeOpenAI(wav: Blob, signal: AbortSignal): Promise<string> {
+  const s = getState().settings;
+  const fd = new FormData();
+  fd.append('file', wav, 'speech.wav');
+  fd.append('model', 'gpt-4o-mini-transcribe');
+  fd.append('language', 'en');
+  fd.append('prompt', 'A Czech learner speaking English. Transcribe verbatim, keep mistakes.');
+  const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    method: 'POST',
+    signal,
+    headers: { Authorization: `Bearer ${s.openaiKey.trim()}` },
+    body: fd,
+  });
+  if (!res.ok) throw new LlmError(await errText(res));
+  return ((await res.json()).text ?? '').trim();
+}
+
+/** Turn recorded speech (16 kHz WAV) into text with the user's Gemini or OpenAI key. */
+export async function transcribeAudio(wav: Blob): Promise<string> {
+  if (!navigator.onLine) throw new LlmError('Přepis řeči přes AI potřebuje internet. Offline odpověď napiš nebo nadiktuj klávesnicí.');
+  const s = getState().settings;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 30000);
+  try {
+    const useGemini = s.geminiKey.trim() && (s.provider === 'gemini' || !s.openaiKey.trim());
+    const t = useGemini ? await transcribeGemini(wav, ctrl.signal) : await transcribeOpenAI(wav, ctrl.signal);
+    return t.replace(/^["“]|["”]$/g, '').trim();
+  } catch (e) {
+    if ((e as Error)?.name === 'AbortError') throw new LlmError('Přepis trval moc dlouho. Zkus to znovu.');
+    if (e instanceof TypeError) throw new LlmError('Nepodařilo se spojit s AI. Zkontroluj připojení.');
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+}
