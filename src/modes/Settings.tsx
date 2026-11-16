@@ -2,6 +2,7 @@ import { Download, ExternalLink, Eye, EyeOff, Moon, Sun, Upload } from 'lucide-r
 import { useRef, useState } from 'react';
 import { SpeakButton } from '../components/Speak';
 import { Btn, Card, Label, cx } from '../components/ui';
+import { navigate } from '../lib/router';
 import { ANTHROPIC_MODELS, GEMINI_MODELS, OPENAI_MODELS, listGeminiModels } from '../lib/llm';
 import { sttSupported } from '../lib/speech';
 import { exportJson, importJson, resetAll, updateSettings, useStore } from '../lib/store';
@@ -220,7 +221,12 @@ export default function Settings() {
       </Card>
 
       <Card className="space-y-3">
-        <Label>Obtížnost</Label>
+        <div className="flex items-center justify-between">
+          <Label>Obtížnost</Label>
+          <button onClick={() => navigate('placement')} className="text-xs font-medium text-accent">
+            Rozřazovací test
+          </button>
+        </div>
         <LevelList />
         <div className="flex items-center gap-2 rounded-xl bg-surface-2 px-3 py-2.5 text-sm">
           <span className="flex-1 min-w-0 truncate">

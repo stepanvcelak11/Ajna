@@ -24,6 +24,7 @@ export const defaultSettings: Settings = {
   dailyGoal: 100,
   sttEngine: 'auto',
   sound: true,
+  onboarded: false,
 };
 
 function initial(): AppState {
@@ -45,7 +46,12 @@ export function normalize(data: unknown): AppState {
   const base = initial();
   return {
     version: 1,
-    settings: migrateSettings({ ...base.settings, ...(d.settings ?? {}) }),
+    settings: migrateSettings({
+      ...base.settings,
+      // people who already practised don't need the welcome tour
+      onboarded: !!(d.days && Object.keys(d.days).length) || !!d.settings?.geminiKey,
+      ...(d.settings ?? {}),
+    }),
     vocab: Array.isArray(d.vocab) ? d.vocab : [],
     mistakes: Array.isArray(d.mistakes) ? d.mistakes : [],
     days: d.days && typeof d.days === 'object' ? d.days : {},

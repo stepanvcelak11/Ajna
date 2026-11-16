@@ -33,6 +33,7 @@ const Placement = lazy(() => import('./modes/Placement'));
 const Stories = lazy(() => import('./modes/Stories'));
 import { Confetti } from './components/Confetti';
 import { BadgeWatcher } from './components/BadgeWatcher';
+import { Onboarding } from './components/Onboarding';
 
 const SCREENS: Record<Route, ComponentType> = {
   home: Dashboard,
@@ -73,6 +74,7 @@ export default function App() {
   const toastMsg = useUi((s) => s.toast);
   const online = useOnline();
   const Screen = SCREENS[route];
+  const onboarded = useStore((s) => s.settings.onboarded);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
@@ -142,6 +144,14 @@ export default function App() {
     vocab: vocab.filter((v) => isDue(v.srs.dueDate)).length,
     mistakes: mistakes.filter((m) => !m.mastered && isDue(m.dueDate)).length,
   };
+
+  if (!onboarded)
+    return (
+      <div className="min-h-dvh bg-bg text-fg">
+        <Onboarding />
+        <Confetti />
+      </div>
+    );
 
   return (
     <div className="min-h-dvh bg-bg text-fg">

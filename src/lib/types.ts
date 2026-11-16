@@ -25,6 +25,8 @@ export interface Settings {
   sttEngine: 'auto' | 'browser' | 'ai';
   /** short sound effects and vibration in games */
   sound: boolean;
+  /** the welcome tour has been completed (or skipped) */
+  onboarded: boolean;
 }
 
 export interface SrsState {
