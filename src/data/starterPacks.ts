@@ -15,7 +15,9 @@ export interface StarterPack {
   items: StarterItem[];
 }
 
-export const STARTER_PACKS: StarterPack[] = [
+import { MORE_PACKS } from './morePacks';
+
+const BASE_PACKS: StarterPack[] = [
   {
     id: 'a1-basics',
     level: 1,
@@ -275,3 +277,5 @@ export const STARTER_PACKS: StarterPack[] = [
     ],
   },
 ];
+
+export const STARTER_PACKS: StarterPack[] = [...BASE_PACKS, ...MORE_PACKS];

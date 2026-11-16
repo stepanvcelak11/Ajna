@@ -44,6 +44,7 @@ const Numbers = lazy(() => import('./modes/Numbers'));
 const Situations = lazy(() => import('./modes/Situations'));
 const Blitz = lazy(() => import('./modes/Blitz'));
 const Preps = lazy(() => import('./modes/Preps'));
+const Fluency = lazy(() => import('./modes/Fluency'));
 import { Confetti } from './components/Confetti';
 import { BadgeWatcher } from './components/BadgeWatcher';
 import { Onboarding } from './components/Onboarding';
@@ -81,6 +82,7 @@ const SCREENS: Record<Route, ComponentType> = {
   situations: Situations,
   blitz: Blitz,
   preps: Preps,
+  fluency: Fluency,
 };
 
 const TABS: { route: Route; label: string; icon: typeof Home; match: Route[] }[] = [

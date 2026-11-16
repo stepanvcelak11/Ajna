@@ -16,6 +16,7 @@ type ModeDef = { route: Route; title: string; desc: string; icon: IconName; tone
 const SPEAK_MODES: (ModeDef & { wide?: boolean })[] = [
   { route: 'stories', title: 'Příběhy', desc: 'Čti a poslouchej příběh, odpověz na otázky a převyprávěj ho', icon: 'book', tone: 'teal', offline: true, wide: true },
   { route: 'tutor', title: 'Zeptej se učitele', desc: 'Cokoliv o angličtině, odpověď česky s příklady', icon: 'bulb', tone: 'amber', wide: true },
+  { route: 'fluency', title: 'Mluv na čas', desc: 'Odpovídej nahlas na čas, měř slova za minutu', icon: 'mic', tone: 'emerald', offline: true, wide: true },
   { route: 'drill', title: 'Překlad vět', desc: 'Česká věta → řekni ji anglicky', icon: 'swap', tone: 'sky' },
   { route: 'ladder', title: 'Nabalování vět', desc: 'Od krátké věty po složitou', icon: 'ladder', tone: 'violet' },
   { route: 'monologue', title: 'Monolog', desc: 'Mluv volně, dostaneš rodilou verzi', icon: 'mic', tone: 'emerald' },
@@ -239,7 +240,7 @@ export default function Dashboard() {
 
       {/* --- AI speaking --- */}
       <section>
-        <Label className="mb-2">Mluvení a čtení s AI</Label>
+        <Label className="mb-2">Mluvení a čtení</Label>
         <div className="grid grid-cols-2 gap-3">
           {SPEAK_MODES.map((m) => (
             <div key={m.route} className={cx(m.wide && 'col-span-2')}>

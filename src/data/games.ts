@@ -41,6 +41,7 @@ export const GAME_LIST: { title: string; games: GameDef[] }[] = [
       { route: 'sprint', id: 'sprint', title: 'Rychlé fráze', desc: 'Řekni větu, hned víš', icon: 'bolt', bg: 'from-orange-500 to-rose-500' },
       { route: 'listen', id: 'listen', title: 'Poslech', desc: 'Slyšíš a opakuješ', icon: 'chat', bg: 'from-emerald-500 to-teal-600', tts: true },
       { route: 'numbers', id: 'numbers', title: 'Čísla poslechem', desc: '13 nebo 30? Ceny, časy', icon: 'coins', bg: 'from-cyan-500 to-sky-600', isNew: true, tts: true },
+      { route: 'fluency', id: 'fluency', title: 'Mluv na čas', desc: 'Slova za minutu', icon: 'mic', bg: 'from-lime-500 to-emerald-600', isNew: true },
       { route: 'situations', id: 'situations', title: 'Co řekneš?', desc: 'Přirozená reakce', icon: 'dialog', bg: 'from-fuchsia-500 to-pink-600', isNew: true },
     ],
   },
@@ -48,7 +49,7 @@ export const GAME_LIST: { title: string; games: GameDef[] }[] = [
 
 /** Featured game of the day rotates. */
 export function gameOfDay(): GameDef {
-  const all = GAME_LIST.flatMap((c) => c.games).filter((g) => g.route !== 'cards' && (!g.tts || ttsSupported));
+  const all = GAME_LIST.flatMap((c) => c.games).filter((g) => g.route !== 'cards' && g.route !== 'fluency' && (!g.tts || ttsSupported));
   let h = 0;
   for (const ch of todayKey()) h = (h * 33 + ch.charCodeAt(0)) >>> 0;
   return all[h % all.length];
