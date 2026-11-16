@@ -378,3 +378,52 @@ Natural English a native speaker would write; a clear beginning, a small problem
     questions: (st.questions ?? []).filter((q) => q?.options?.length >= 2 && q.a >= 0 && q.a < q.options.length),
   };
 }
+
+// ---------- Grammar cheat sheet ----------
+export interface GrammarSheet {
+  summary_cz: string;
+  forms: { label_cz: string; pattern: string }[];
+  examples: { en: string; cz: string }[];
+  mistakes: { wrong: string; right: string; cz: string }[];
+  tip_cz: string;
+}
+
+const SHEET_KEY = 'ajna-grammar-sheets';
+
+export function cachedSheet(topicId: string): GrammarSheet | null {
+  try {
+    return JSON.parse(localStorage.getItem(SHEET_KEY) ?? '{}')[topicId] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function explainGrammar(topicId: string, topicEn: string): Promise<GrammarSheet> {
+  const cached = cachedSheet(topicId);
+  if (cached) return cached;
+  const { who } = lvl();
+  const sheet = await callJson<GrammarSheet>({
+    system: `You are a clear, friendly English grammar teacher for ${who}. Explanations in Czech, examples in natural English.`,
+    user: `Write a short cheat sheet for: ${topicEn}.
+- summary_cz: 2-3 short Czech sentences: when and why we use it (compare with Czech where it helps).
+- forms: 2-4 items {label_cz (e.g. "Kladná věta", "Otázka", "Zápor"), pattern (e.g. "I have + 3. tvar slovesa")}.
+- examples: 4 everyday example sentences {en, cz}.
+- mistakes: 3 typical mistakes Czech speakers make {wrong, right, cz = why, one short Czech sentence}.
+- tip_cz: one memorable tip in Czech.`,
+    schema: obj({
+      summary_cz: str,
+      forms: arr(obj({ label_cz: str, pattern: str })),
+      examples: arr(obj({ en: str, cz: str })),
+      mistakes: arr(obj({ wrong: str, right: str, cz: str })),
+      tip_cz: str,
+    }),
+  });
+  try {
+    const all = JSON.parse(localStorage.getItem(SHEET_KEY) ?? '{}');
+    all[topicId] = sheet;
+    localStorage.setItem(SHEET_KEY, JSON.stringify(all));
+  } catch {
+    /* cache is optional */
+  }
+  return sheet;
+}

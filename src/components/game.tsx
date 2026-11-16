@@ -1,7 +1,8 @@
 // Shared building blocks for the mini-games: header with progress + combo, choice buttons, end screen.
 import { RotateCcw, Trophy } from 'lucide-react';
 import { useEffect, type ReactNode } from 'react';
-import { navigate } from '../lib/router';
+import { navigate, useRoute } from '../lib/router';
+import { nextTask } from '../lib/plan';
 import { sfx } from '../lib/sfx';
 import { celebrate } from '../lib/ui';
 import { Icon, IconTile, type IconName, type Tone } from './icons';
@@ -79,6 +80,8 @@ export function GameEnd({
   children?: ReactNode;
 }) {
   const ratio = total ? score / total : 0;
+  const route = useRoute();
+  const next = nextTask(route);
   useEffect(() => {
     if (ratio >= 0.8) {
       celebrate();
@@ -108,6 +111,19 @@ export function GameEnd({
         )}
       </div>
       {children}
+      {next && (
+        <button
+          onClick={() => navigate(next.route)}
+          className="flex w-full items-center gap-3 rounded-2xl border border-accent/40 bg-accent/8 p-3 text-left transition active:scale-[0.99]"
+        >
+          <IconTile name={next.icon} tone={next.tone} size="sm" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-[10px] font-bold uppercase tracking-wider text-accent">Další úkol z plánu</span>
+            <span className="block truncate text-sm font-semibold">{next.title}</span>
+          </span>
+          <Icon name="up" className="size-4 rotate-45 text-accent" />
+        </button>
+      )}
       <div className="flex gap-2 pt-1">
         <Btn className="flex-1" onClick={() => navigate('home')}>
           Domů

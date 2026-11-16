@@ -1,6 +1,7 @@
 export type Provider = 'openai' | 'anthropic' | 'gemini';
 export type Accent = 'en-US' | 'en-GB';
 export type MicMode = 'toggle' | 'ptt';
+export type AccentColor = 'violet' | 'blue' | 'teal' | 'green' | 'orange' | 'pink';
 
 export interface Settings {
   provider: Provider;
@@ -27,6 +28,8 @@ export interface Settings {
   sound: boolean;
   /** the welcome tour has been completed (or skipped) */
   onboarded: boolean;
+  /** accent colour of the app */
+  color: AccentColor;
 }
 
 export interface SrsState {
@@ -130,6 +133,8 @@ export interface AppState {
   games: Record<string, GameStat>;
   /** achievement ids the learner has already been shown */
   badgesSeen: string[];
+  /** today's "word of the day" attempt */
+  wordle: { day: string; guesses: string[] } | null;
 }
 
 export interface GameStat {

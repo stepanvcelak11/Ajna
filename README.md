@@ -68,10 +68,13 @@ Every exercise follows the level: sentence length and grammar in the drill and t
 
 ## Games, reading and progress (offline-first)
 
-- **Games** (work offline): Quick phrases, Quiz (4 question types, timer, combo), Sentence builder (word tiles with decoys), Listening (TTS dictation with slow replay), Matching (timed boards), Grammar (48 gap-fill questions A1–B2 with Czech explanations). Material comes from level-matched packs, textbook vocabulary and your own cards.
+- **Games** (work offline): Word of the day (Wordle-style spelling with a Czech clue), Traps (typical Czech mistakes + your own from the Mistake Bank), Quick phrases, Quiz (4 question types, timer, combo), Sentence builder (word tiles with decoys), Listening (TTS dictation with slow replay), Matching (timed boards), Grammar (48 gap-fill questions A1–B2 with Czech explanations). Material comes from level-matched packs, textbook vocabulary and your own cards.
 - **Stories**: AI-written graded stories on any topic plus built-in offline stories: read-along, tap-to-translate, Czech toggle, comprehension questions and a spoken retelling evaluated by AI.
 - **Free conversation** with a friendly native speaker on any topic (in Roleplay).
 - **Placement test**: 4 questions per level from A1 up; sets the recommended level.
 - **Progress**: rank, XP chart, totals, game records and 21 achievements with unlock banners; confetti and sound effects (can be turned off).
 - **Welcome tour** for new users: goal, level (or placement test), AI key.
 - **Speech-to-text**: browser engine, or on iPhone a recording transcribed by your Gemini/OpenAI key (selectable in Settings).
+- **Grammar cheat sheet**: every level topic and textbook topic; AI writes a Czech explanation with forms, examples and typical Czech mistakes (cached for offline), one tap to practise it.
+- **Daily plan chaining**: game end screens offer the next unfinished task of the plan; exercises are full-screen without the tab bar.
+- **Accent colours**: six app colours in Settings.

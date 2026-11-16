@@ -50,9 +50,9 @@ export function Onboarding() {
         {step === 0 && (
           <>
             <div className="mb-6 flex justify-center">
-              <div className="relative grid size-28 place-items-center rounded-[2rem] bg-gradient-to-br from-[#8b6cff] to-[#4b3bd1] text-white shadow-xl shadow-accent/30 animate-float">
+              <div className="relative grid size-28 place-items-center rounded-[2rem] hero-gradient text-white shadow-xl shadow-accent/30 animate-float">
                 <Icon name="chat" className="size-14" strokeWidth={1.5} />
-                <span className="absolute -right-2 -top-2 grid size-9 place-items-center rounded-full bg-amber-400 text-[#4b3bd1] shadow-md">
+                <span className="absolute -right-2 -top-2 grid size-9 place-items-center rounded-full bg-amber-400 text-accent shadow-md">
                   <Icon name="sparkle" className="size-5" />
                 </span>
               </div>

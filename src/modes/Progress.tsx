@@ -5,7 +5,7 @@ import { Card, Label, ModeHeader, cx } from '../components/ui';
 import { BADGES } from '../data/achievements';
 import { dayXp, rankOf, streak, todayKey, totalXp, useStore } from '../lib/store';
 
-const GAME_NAMES: Record<string, string> = { quiz: 'Kvíz', builder: 'Skládání vět', listen: 'Poslech', match: 'Párování', grammar: 'Gramatika' };
+const GAME_NAMES: Record<string, string> = { quiz: 'Kvíz', builder: 'Skládání vět', listen: 'Poslech', match: 'Párování', grammar: 'Gramatika', traps: 'Chytáky', wordle: 'Slovo dne' };
 const fmtTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
 export default function Progress() {
@@ -43,7 +43,7 @@ export default function Progress() {
     <div className="space-y-6">
       <ModeHeader title="Tvůj pokrok" subtitle={`${active} ${active === 1 ? 'den' : active >= 2 && active <= 4 ? 'dny' : 'dní'} tréninku celkem`} />
 
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#7c5cff] via-[#6a4cf0] to-[#4b3bd1] p-5 text-white shadow-lg shadow-accent/25">
+      <div className="relative overflow-hidden rounded-3xl hero-gradient p-5 text-white shadow-lg shadow-accent/25">
         <div className="pointer-events-none absolute -right-8 -top-10 size-36 rounded-full bg-white/10" />
         <div className="text-xs text-white/70">Hodnost {rank.rank}</div>
         <div className="text-2xl font-extrabold">{rank.name}</div>

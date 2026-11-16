@@ -7,6 +7,7 @@ import { isDue } from './lib/srs';
 import { useStore } from './lib/store';
 import { isTypingTarget, runAction, useOnline, useUi } from './lib/ui';
 import { IS_IOS } from './lib/speech';
+import { ACCENTS } from './lib/colors';
 
 // iPhone home-screen app: iOS sometimes keeps the viewport shortened after the keyboard closes,
 // so fixed `bottom: 0` elements float mid-screen. There we pin them to the full screen height instead.
@@ -31,6 +32,9 @@ const Progress = lazy(() => import('./modes/Progress'));
 const Grammar = lazy(() => import('./modes/Grammar'));
 const Placement = lazy(() => import('./modes/Placement'));
 const Stories = lazy(() => import('./modes/Stories'));
+const Traps = lazy(() => import('./modes/Traps'));
+const Wordle = lazy(() => import('./modes/Wordle'));
+const Cheatsheet = lazy(() => import('./modes/Cheatsheet'));
 import { Confetti } from './components/Confetti';
 import { BadgeWatcher } from './components/BadgeWatcher';
 import { Onboarding } from './components/Onboarding';
@@ -56,10 +60,13 @@ const SCREENS: Record<Route, ComponentType> = {
   grammar: Grammar,
   placement: Placement,
   stories: Stories,
+  traps: Traps,
+  wordle: Wordle,
+  cheatsheet: Cheatsheet,
 };
 
 const TABS: { route: Route; label: string; icon: typeof Home; match: Route[] }[] = [
-  { route: 'home', label: 'Trénink', icon: Home, match: ['home', 'ladder', 'drill', 'monologue', 'roleplay', 'sprint', 'quiz', 'builder', 'listen', 'match', 'progress', 'grammar', 'placement', 'stories'] },
+  { route: 'home', label: 'Trénink', icon: Home, match: ['home', 'ladder', 'drill', 'monologue', 'roleplay', 'sprint', 'quiz', 'builder', 'listen', 'match', 'progress', 'grammar', 'placement', 'stories', 'traps', 'wordle', 'cheatsheet'] },
   { route: 'course', label: 'Učebnice', icon: GraduationCap, match: ['course'] },
   { route: 'vocab', label: 'Slovíčka', icon: BookOpen, match: ['vocab', 'vocab-review'] },
   { route: 'mistakes', label: 'Chyby', icon: AlertCircle, match: ['mistakes', 'mistake-practice'] },
@@ -69,17 +76,22 @@ const TABS: { route: Route; label: string; icon: typeof Home; match: Route[] }[]
 export default function App() {
   const route = useRoute();
   const theme = useStore((s) => s.settings.theme);
+  const color = useStore((s) => s.settings.color);
   const vocab = useStore((s) => s.vocab);
   const mistakes = useStore((s) => s.mistakes);
   const toastMsg = useUi((s) => s.toast);
   const online = useOnline();
   const Screen = SCREENS[route];
   const onboarded = useStore((s) => s.settings.onboarded);
+  // exercises are full-screen (back arrow in the header); the tab bar shows on the main sections only
+  const showNav = TABS.some((t) => t.route === route);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
+    const a = ACCENTS[color] ?? ACCENTS.violet;
+    document.documentElement.style.setProperty('--accent', theme === 'dark' ? a.dark : a.light);
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0b0b0f' : '#fafafa');
-  }, [theme]);
+  }, [theme, color]);
 
   useEffect(() => {
     if (!IOS_STANDALONE) return;
@@ -157,7 +169,7 @@ export default function App() {
     <div className="min-h-dvh bg-bg text-fg">
       <main
         key={route}
-        className="mx-auto max-w-xl px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(6rem+env(safe-area-inset-bottom))] animate-fade"
+        className={cx('mx-auto max-w-xl px-4 pt-[calc(1rem+env(safe-area-inset-top))] animate-fade', showNav ? 'pb-[calc(6rem+env(safe-area-inset-bottom))]' : 'pb-[calc(1.5rem+env(safe-area-inset-bottom))]')}
       >
         {!online && (
           <div className="mb-4 flex items-center gap-2 rounded-xl border border-line bg-surface-2 px-3 py-2 text-xs text-muted">
@@ -176,12 +188,21 @@ export default function App() {
 
       {toastMsg && (
         <div
-          style={IOS_STANDALONE ? { bottom: 'auto', top: 'calc(var(--app-h, 100%) - 4.75rem - env(safe-area-inset-bottom) - 2.5rem)' } : undefined}
-          className="fixed left-1/2 -translate-x-1/2 z-[60] bottom-[calc(4.75rem+env(safe-area-inset-bottom))] whitespace-nowrap rounded-full border border-line bg-surface px-4 py-2 text-sm shadow-lg animate-up">
+          style={
+            IOS_STANDALONE
+              ? { bottom: 'auto', top: `calc(var(--app-h, 100%) - ${showNav ? '4.75rem' : '1.5rem'} - env(safe-area-inset-bottom) - 2.5rem)` }
+              : undefined
+          }
+          className={cx(
+            'fixed left-1/2 -translate-x-1/2 z-[60] whitespace-nowrap rounded-full border border-line bg-surface px-4 py-2 text-sm shadow-lg animate-up',
+            showNav ? 'bottom-[calc(4.75rem+env(safe-area-inset-bottom))]' : 'bottom-[calc(1.5rem+env(safe-area-inset-bottom))]',
+          )}
+        >
           {toastMsg.text}
         </div>
       )}
 
+      {showNav && (
       <nav
         style={IOS_STANDALONE ? { bottom: 'auto', top: 'var(--app-h, 100%)', transform: 'translateY(-100%)' } : undefined}
         className="fixed bottom-0 inset-x-0 z-40 border-t border-line bg-bg/85 backdrop-blur-xl pb-[env(safe-area-inset-bottom)]">
@@ -207,6 +228,7 @@ export default function App() {
           })}
         </div>
       </nav>
+      )}
     </div>
   );
 }

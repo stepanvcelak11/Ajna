@@ -25,10 +25,11 @@ export const defaultSettings: Settings = {
   sttEngine: 'auto',
   sound: true,
   onboarded: false,
+  color: 'violet',
 };
 
 function initial(): AppState {
-  return { version: 1, settings: { ...defaultSettings }, vocab: [], mistakes: [], days: {}, addedPacks: [], levelLog: [], phraseStats: {}, games: {}, badgesSeen: [] };
+  return { version: 1, settings: { ...defaultSettings }, vocab: [], mistakes: [], days: {}, addedPacks: [], levelLog: [], phraseStats: {}, games: {}, badgesSeen: [], wordle: null };
 }
 
 function load(): AppState {
@@ -59,6 +60,7 @@ export function normalize(data: unknown): AppState {
     levelLog: Array.isArray(d.levelLog) ? d.levelLog : [],
     phraseStats: d.phraseStats && typeof d.phraseStats === 'object' ? d.phraseStats : {},
     games: d.games && typeof d.games === 'object' ? d.games : {},
+    wordle: d.wordle && typeof d.wordle === 'object' ? d.wordle : null,
     // existing users: don't celebrate everything they unlocked before badges existed
     badgesSeen: Array.isArray(d.badgesSeen) ? d.badgesSeen : d.days && Object.keys(d.days).length ? ['__legacy'] : [],
   };

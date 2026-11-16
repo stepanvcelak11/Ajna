@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import { SpeakButton } from '../components/Speak';
 import { Btn, Card, Label, cx } from '../components/ui';
 import { navigate } from '../lib/router';
+import { ACCENTS } from '../lib/colors';
 import { ANTHROPIC_MODELS, GEMINI_MODELS, OPENAI_MODELS, listGeminiModels } from '../lib/llm';
 import { sttSupported } from '../lib/speech';
 import { exportJson, importJson, resetAll, updateSettings, useStore } from '../lib/store';
@@ -295,6 +296,20 @@ export default function Settings() {
       </Card>
 
       <Card className="divide-y divide-line py-1.5">
+        <div className="py-2.5">
+          <div className="mb-2 text-sm">Barva aplikace</div>
+          <div className="flex flex-wrap gap-2.5">
+            {(Object.keys(ACCENTS) as (keyof typeof ACCENTS)[]).map((c) => (
+              <button
+                key={c}
+                aria-label={ACCENTS[c].name}
+                onClick={() => set({ color: c })}
+                className={cx('size-9 rounded-full transition', s.color === c ? 'ring-2 ring-fg ring-offset-2 ring-offset-surface scale-110' : 'opacity-80')}
+                style={{ background: s.theme === 'dark' ? ACCENTS[c].dark : ACCENTS[c].light }}
+              />
+            ))}
+          </div>
+        </div>
         <Row label="Zvuky a vibrace" sub="ve hrách">
           <Seg
             value={s.sound ? 'on' : 'off'}

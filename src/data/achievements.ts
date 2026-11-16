@@ -18,7 +18,7 @@ const wordsSpoken = (s: AppState) => sum(days(s), (d) => d.words);
 const goalDays = (s: AppState) => days(s).filter((d) => dayXp(d) >= s.settings.dailyGoal).length;
 const phrasesKnown = (s: AppState) => Object.values(s.phraseStats).filter((p) => p.ok > p.fail).length;
 const game = (s: AppState, id: string) => s.games[id] ?? { plays: 0, best: 0, correct: 0 };
-const EXPLORE = ['drill', 'ladder', 'monologue', 'roleplay', 'sprint', 'quiz', 'builder', 'listen', 'match', 'grammar', 'stories', 'vocab-review'];
+const EXPLORE = ['drill', 'ladder', 'monologue', 'roleplay', 'sprint', 'quiz', 'builder', 'listen', 'match', 'grammar', 'stories', 'traps', 'wordle', 'vocab-review'];
 const explored = (s: AppState) => {
   const seen = new Set<string>();
   for (const d of days(s)) for (const k of Object.keys(d.modes ?? {})) seen.add(k);
@@ -60,6 +60,8 @@ export const BADGES: Badge[] = [
     tone: 'teal',
     progress: (s) => [Object.values(s.days).reduce((n, d) => n + (d.modes?.stories ?? 0), 0), 15],
   },
+  { id: 'wordle10', title: 'Hádankář', desc: 'Zahraj si 10× hádání slov', icon: 'sparkle', tone: 'emerald', progress: (s) => [Object.values(s.days).reduce((n, d) => n + (d.modes?.wordle ?? 0), 0), 10] },
+  { id: 'traps50', title: 'Lovec chytáků', desc: 'Odhal 50 chytáků', icon: 'target', tone: 'rose', progress: (s) => [game(s, 'traps').correct, 50] },
   { id: 'explorer', title: 'Průzkumník', desc: `Vyzkoušej všech ${EXPLORE.length} cvičení`, icon: 'target', tone: 'slate', progress: (s) => [explored(s), EXPLORE.length] },
 ];
 

@@ -10,7 +10,6 @@ import { hasKey } from '../lib/llm';
 import { navigate, type Route } from '../lib/router';
 import { isDue } from '../lib/srs';
 import { dayXp, levelSuggestion, rankOf, streak, todayKey, topTraps, totalXp, updateSettings, useStore } from '../lib/store';
-import type { DayStats } from '../lib/types';
 import { useOnline } from '../lib/ui';
 
 type ModeDef = { route: Route; title: string; desc: string; icon: IconName; tone: Tone; offline?: boolean };
@@ -23,9 +22,10 @@ const SPEAK_MODES: (ModeDef & { wide?: boolean })[] = [
   { route: 'roleplay', title: 'Hraní rolí', desc: 'Kavárna, lékárna, pohovor…', icon: 'dialog', tone: 'amber' },
 ];
 
-const REVIEW_MODES: ModeDef[] = [
+const REVIEW_MODES: (ModeDef & { wide?: boolean })[] = [
   { route: 'vocab-review', title: 'Slovíčka', desc: 'Vybav si slovo a použij ho', icon: 'cards', tone: 'pink', offline: true },
   { route: 'mistake-practice', title: 'Moje chyby', desc: 'Procvič, co ti nešlo', icon: 'target', tone: 'rose' },
+  { route: 'cheatsheet', title: 'Gramatický tahák', desc: 'Pravidla česky, příklady a typické chyby ke každému tématu', icon: 'bulb', tone: 'indigo', offline: true, wide: true },
 ];
 
 // colourful game cards; all of them work offline
@@ -35,54 +35,11 @@ const GAMES: { route: Route; title: string; desc: string; icon: IconName; bg: st
   { route: 'builder', title: 'Skládání vět', desc: 'Správný slovosled', icon: 'layers', bg: 'from-sky-500 to-blue-600', id: 'builder' },
   { route: 'listen', title: 'Poslech', desc: 'Slyšíš a opakuješ', icon: 'chat', bg: 'from-emerald-500 to-teal-600', id: 'listen' },
   { route: 'match', title: 'Párování', desc: 'Spoj dvojice na čas', icon: 'sparkle', bg: 'from-pink-500 to-fuchsia-600', id: 'match' },
-  { route: 'grammar', title: 'Gramatika', desc: 'Doplň správný tvar, s vysvětlením česky', icon: 'book', bg: 'from-amber-500 to-orange-600', id: 'grammar' },
+  { route: 'grammar', title: 'Gramatika', desc: 'Doplň tvar + vysvětlení', icon: 'book', bg: 'from-amber-500 to-orange-600', id: 'grammar' },
+  { route: 'traps', title: 'Chytáky', desc: 'Typické chyby Čechů', icon: 'target', bg: 'from-rose-500 to-red-600', id: 'traps' },
 ];
 
-// The AI exercise of the day rotates so every day feels a bit different.
-const CHALLENGES: { route: Route; title: string; target: number; unit: string; icon: IconName; tone: Tone }[] = [
-  { route: 'drill', title: 'Přelož 5 vět', target: 5, unit: 'vět', icon: 'swap', tone: 'sky' },
-  { route: 'ladder', title: 'Nabal 3 věty', target: 3, unit: 'kroků', icon: 'ladder', tone: 'violet' },
-  { route: 'monologue', title: 'Řekni 1 monolog', target: 1, unit: 'monolog', icon: 'mic', tone: 'emerald' },
-  { route: 'roleplay', title: 'Zahraj si scénku (4 repliky)', target: 4, unit: 'replik', icon: 'dialog', tone: 'amber' },
-];
-
-const DAILY_GAMES: { route: Route; title: string; target: number; icon: IconName; tone: Tone }[] = [
-  { route: 'quiz', title: 'Zahraj si Kvíz', target: 12, icon: 'medal', tone: 'violet' },
-  { route: 'builder', title: 'Slož 8 vět', target: 8, icon: 'layers', tone: 'sky' },
-  { route: 'listen', title: 'Poslech: 8 vět', target: 8, icon: 'chat', tone: 'emerald' },
-  { route: 'match', title: 'Párování (3 tabule)', target: 15, icon: 'sparkle', tone: 'pink' },
-  { route: 'grammar', title: 'Gramatika: 10 otázek', target: 10, icon: 'book', tone: 'amber' },
-];
-
-interface Task {
-  route: Route;
-  title: string;
-  done: number;
-  target: number;
-  icon: IconName;
-  tone: Tone;
-  ai?: boolean;
-}
-
-function dailyPlan(day: DayStats | undefined, vocabCount: number, vocabDue: number, mistakesDue: number): Task[] {
-  const m = day?.modes ?? {};
-  const tasks: Task[] = [];
-  const reviewed = m['vocab-review'] ?? 0;
-  if (vocabCount > 0 && (vocabDue > 0 || reviewed > 0)) {
-    // step 1 + step 2 per card both count as answers, so 10 answers ≈ 5 cards
-    tasks.push({ route: 'vocab-review', title: 'Zopakuj slovíčka', done: Math.min(reviewed, 10), target: vocabDue === 0 ? Math.min(reviewed, 10) : 10, icon: 'cards', tone: 'pink' });
-  }
-  tasks.push({ route: 'sprint', title: 'Rychlé fráze (1 kolo)', done: Math.min(m.sprint ?? 0, 10), target: 10, icon: 'bolt', tone: 'orange' });
-  const g = DAILY_GAMES[Math.floor(Date.now() / 86400000) % DAILY_GAMES.length];
-  tasks.push({ route: g.route, title: g.title, done: Math.min(m[g.route] ?? 0, g.target), target: g.target, icon: g.icon, tone: g.tone });
-  const c = CHALLENGES[Math.floor(Date.now() / 86400000) % CHALLENGES.length];
-  tasks.push({ route: c.route, title: c.title, done: Math.min(m[c.route] ?? 0, c.target), target: c.target, icon: c.icon, tone: c.tone, ai: true });
-  const fixed = m['mistake-practice'] ?? 0;
-  if (mistakesDue > 0 || fixed > 0) {
-    tasks.push({ route: 'mistake-practice', title: 'Oprav své chyby', done: Math.min(fixed, 3), target: mistakesDue === 0 ? Math.min(fixed, 3) : 3, icon: 'target', tone: 'rose', ai: true });
-  }
-  return tasks;
-}
+import { dailyPlan, wordleDoneToday } from '../lib/plan';
 
 const WEEKDAYS = ['Ne', 'Po', 'Út', 'St', 'Čt', 'Pá', 'So'];
 
@@ -118,6 +75,8 @@ export default function Dashboard() {
   const focus = useStore((s) => s.settings.focus);
   const levelLog = useStore((s) => s.levelLog);
   const games = useStore((s) => s.games);
+  useStore((s) => s.wordle);
+  const wordleDone = wordleDoneToday();
   useStore((s) => s.settings.provider + s.settings.geminiKey + s.settings.anthropicKey + s.settings.openaiKey);
   const online = useOnline();
   const [levelOpen, setLevelOpen] = useState(false);
@@ -287,6 +246,29 @@ export default function Dashboard() {
             Rekordy
           </button>
         </div>
+        <button
+          onClick={() => navigate('wordle')}
+          className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-line bg-surface p-3 text-left transition active:scale-[0.99]"
+        >
+          <span className="grid grid-cols-5 gap-0.5">
+            {['W', 'O', 'R', 'D', 'S'].map((ch, k) => (
+              <span
+                key={k}
+                className={cx(
+                  'grid size-6 place-items-center rounded-md text-[11px] font-extrabold text-white',
+                  wordleDone ? 'bg-emerald-500' : k % 3 === 0 ? 'bg-emerald-500' : k % 3 === 1 ? 'bg-amber-500' : 'bg-surface-3 text-muted',
+                )}
+              >
+                {ch}
+              </span>
+            ))}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-bold">Slovo dne</span>
+            <span className="block text-xs text-muted">{wordleDone ? 'Dnes hotovo · další zítra (nebo trénink)' : 'Uhodni anglické slovo na 6 pokusů'}</span>
+          </span>
+          <ChevronRight className="size-4 text-muted" />
+        </button>
         <div className="grid grid-cols-2 gap-3">
           {GAMES.map((g, n) => {
             const st = g.id ? games[g.id] : undefined;
@@ -336,7 +318,9 @@ export default function Dashboard() {
         <Label className="mb-2">Opakování</Label>
         <div className="grid grid-cols-2 gap-3">
           {REVIEW_MODES.map((m) => (
-            <ModeCard key={m.route} m={m} badge={badge[m.route]} offline={!online} />
+            <div key={m.route} className={cx(m.wide && 'col-span-2')}>
+              <ModeCard m={m} badge={badge[m.route]} offline={!online} wide={m.wide} />
+            </div>
           ))}
         </div>
       </section>
@@ -407,7 +391,7 @@ function Hero() {
       role="button"
       tabIndex={0}
       onClick={() => navigate('progress')}
-      className="relative cursor-pointer overflow-hidden rounded-3xl bg-gradient-to-br from-[#7c5cff] via-[#6a4cf0] to-[#4b3bd1] p-5 text-white shadow-lg shadow-accent/25 transition active:scale-[0.99]"
+      className="relative cursor-pointer overflow-hidden rounded-3xl hero-gradient p-5 text-white shadow-lg shadow-accent/25 transition active:scale-[0.99]"
     >
       <div className="pointer-events-none absolute -right-10 -top-12 size-44 rounded-full bg-white/10" />
       <div className="pointer-events-none absolute -bottom-16 -left-8 size-40 rounded-full bg-white/5" />
@@ -442,8 +426,8 @@ function Hero() {
             <div
               className={cx(
                 'grid size-7 place-items-center rounded-full text-[10px] font-bold',
-                d.v >= 1 ? 'bg-white text-[#5b3fe6]' : d.v > 0 ? 'bg-white/30' : 'bg-white/10',
-                d.today && 'ring-2 ring-white/80 ring-offset-2 ring-offset-[#6a4cf0]',
+                d.v >= 1 ? 'bg-white text-accent' : d.v > 0 ? 'bg-white/30' : 'bg-white/10',
+                d.today && 'ring-2 ring-white/80 ring-offset-2 ring-offset-transparent',
               )}
             >
               {d.v >= 1 ? <Check className="size-3.5" strokeWidth={3} /> : d.v > 0 ? <span className="size-1.5 rounded-full bg-white" /> : null}
