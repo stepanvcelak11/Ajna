@@ -27,6 +27,7 @@ const DAILY_GAMES: { route: Route; title: string; target: number; icon: IconName
   { route: 'situations', title: 'Co řekneš? (8 situací)', target: 8, icon: 'dialog', tone: 'pink' },
   { route: 'numbers', title: 'Čísla poslechem: 10', target: 10, icon: 'coins', tone: 'sky' },
   { route: 'blitz', title: 'Blesk: 1 kolo', target: 1, icon: 'bolt', tone: 'amber' },
+  { route: 'pronounce', title: 'Výslovnost: 10 slov', target: 10, icon: 'mic', tone: 'rose' },
   { route: 'wordsearch', title: 'Osmisměrka', target: 1, icon: 'target', tone: 'emerald' },
   { route: 'crossword', title: 'Křížovka', target: 1, icon: 'layers', tone: 'rose' },
 ];

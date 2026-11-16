@@ -21,6 +21,8 @@ interface Props {
   /** externally force-stop (e.g. timer ran out) */
   stopSignal?: unknown;
   hint?: string;
+  /** speaking games: no typing, no editing – what the microphone understood is the answer */
+  speakOnly?: boolean;
 }
 
 export function MicRecorder({
@@ -34,6 +36,7 @@ export function MicRecorder({
   onListeningChange,
   stopSignal,
   hint,
+  speakOnly,
 }: Props) {
   const micMode = useStore((s) => s.settings.micMode);
   const accent = useStore((s) => s.settings.accent);
@@ -157,9 +160,9 @@ export function MicRecorder({
           ref={taRef}
           data-recorder="true"
           value={sr.text}
-          readOnly={sr.listening || sr.status === 'transcribing'}
+          readOnly={speakOnly || sr.listening || sr.status === 'transcribing'}
           onChange={(e) => sr.setText(e.target.value)}
-          placeholder={sr.status === 'transcribing' ? 'Přepisuji, co jsi řekl…' : placeholder}
+          placeholder={sr.status === 'transcribing' ? 'Přepisuji, co jsi řekl…' : speakOnly ? 'Tady se objeví, čemu mikrofon rozuměl…' : placeholder}
           rows={3}
           className={cx(
             'w-full resize-none rounded-2xl border bg-surface-2 px-4 py-3 text-[16px] leading-relaxed outline-none transition',
@@ -177,21 +180,21 @@ export function MicRecorder({
         )}
       </div>
 
-      <button
-        type="button"
-        onClick={() => setUi({ rescueOpen: true })}
-        className="w-full flex items-center gap-2 rounded-xl border border-dashed border-line px-3 h-9 text-xs text-muted hover:text-fg hover:border-accent/50"
-      >
-        <LifeBuoy className="size-3.5 text-accent" />
-        Nevím slovo? Napiš ho česky…
-        <span className="ml-auto hidden sm:inline text-[10px] opacity-70">Ctrl+K</span>
-      </button>
+      {!speakOnly && (
+        <button
+          type="button"
+          onClick={() => setUi({ rescueOpen: true })}
+          className="w-full flex items-center gap-2 rounded-xl border border-dashed border-line px-3 h-9 text-xs text-muted hover:text-fg hover:border-accent/50"
+        >
+          <LifeBuoy className="size-3.5 text-accent" />
+          Nevím slovo? Napiš ho česky…
+          <span className="ml-auto hidden sm:inline text-[10px] opacity-70">Ctrl+K</span>
+        </button>
+      )}
 
       {(sr.stalled || sr.error) && (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/8 px-3 py-2.5 text-xs space-y-2">
-          <div className={sr.error ? 'text-red-500' : ''}>
-            {sr.error ?? 'Nic neslyším. Mikrofon se restartoval, zkus mluvit znovu a trochu hlasitěji.'}
-          </div>
+          <div className={sr.error ? 'text-red-500' : ''}>{sr.error ?? 'Nic neslyším. Mikrofon se restartoval, zkus mluvit znovu a trochu hlasitěji.'}</div>
           <div className="flex flex-wrap gap-x-4 gap-y-1.5">
             {sr.canRetry && (
               <button onClick={sr.retry} className="inline-flex items-center gap-1.5 font-semibold text-accent">
@@ -203,17 +206,17 @@ export function MicRecorder({
                 <Sparkles className="size-3.5" /> Přepnout na AI přepis
               </button>
             )}
-            <button onClick={useKeyboard} className="inline-flex items-center gap-1.5 font-semibold text-accent">
-              <Keyboard className="size-3.5" /> Diktovat přes klávesnici
-            </button>
+            {!speakOnly && (
+              <button onClick={useKeyboard} className="inline-flex items-center gap-1.5 font-semibold text-accent">
+                <Keyboard className="size-3.5" /> Diktovat přes klávesnici
+              </button>
+            )}
           </div>
-          <div className="text-[11px] text-muted">Na klávesnici telefonu ťukni na ikonu mikrofonu vpravo dole a mluv.</div>
+          {!speakOnly && <div className="text-[11px] text-muted">Na klávesnici telefonu ťukni na ikonu mikrofonu vpravo dole a mluv.</div>}
         </div>
       )}
       {!sttSupported && !useAi && (
-        <div className="text-xs text-muted">
-          Rozpoznávání řeči tu není dostupné – použij diktování na klávesnici telefonu (ikona mikrofonu) a piš do pole.
-        </div>
+        <div className="text-xs text-muted">Rozpoznávání řeči tu není dostupné – použij diktování na klávesnici telefonu (ikona mikrofonu) a piš do pole.</div>
       )}
 
       <div className="flex items-center gap-3">
@@ -235,10 +238,7 @@ export function MicRecorder({
         >
           {sr.listening && sr.status !== 'starting' && !useAi && <span className="absolute inset-0 rounded-full bg-red-500/40 animate-ping" />}
           {sr.listening && useAi && (
-            <span
-              className="absolute inset-0 rounded-full bg-red-500/35 transition-transform duration-100"
-              style={{ transform: `scale(${1 + sr.level * 0.55})` }}
-            />
+            <span className="absolute inset-0 rounded-full bg-red-500/35 transition-transform duration-100" style={{ transform: `scale(${1 + sr.level * 0.55})` }} />
           )}
           {sr.listening ? <MicOff className="size-7 relative" /> : <Mic className="size-7" />}
         </button>
@@ -254,23 +254,33 @@ export function MicRecorder({
                 <span className="text-emerald-600 dark:text-emerald-400 font-medium">Slyším tě…</span>
               ) : micMode === 'ptt' ? (
                 'Mluv… pusť pro pauzu na přemýšlení'
+              ) : useAi ? (
+                'Nahrávám, mluv. Pak ťukni znovu nebo rovnou Ověřit.'
               ) : (
-                useAi ? 'Nahrávám, mluv. Pak ťukni znovu nebo rovnou Ověřit.' : 'Poslouchám, mluv. Klidně se zastav a přemýšlej.'
+                'Poslouchám, mluv. Klidně se zastav a přemýšlej.'
               )
             ) : (
-              hint ?? (micMode === 'ptt' ? 'Drž tlačítko a mluv' : 'Ťukni a mluv')
+              (hint ?? (micMode === 'ptt' ? 'Drž tlačítko a mluv' : 'Ťukni a mluv'))
             )}
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
             <button
-              onClick={() => updateSettings({ micMode: micMode === 'ptt' ? 'toggle' : 'ptt' })}
+              onClick={() =>
+                updateSettings({
+                  micMode: micMode === 'ptt' ? 'toggle' : 'ptt',
+                })
+              }
               className="inline-flex items-center gap-1 rounded-md border border-line px-1.5 py-0.5 text-[10px] text-muted hover:text-fg"
             >
               {micMode === 'ptt' ? <Hand className="size-3" /> : <Mic className="size-3" />}
               {micMode === 'ptt' ? 'Push-to-talk' : 'Toggle'}
             </button>
             <button
-              onClick={() => updateSettings({ accent: accent === 'en-US' ? 'en-GB' : 'en-US' })}
+              onClick={() =>
+                updateSettings({
+                  accent: accent === 'en-US' ? 'en-GB' : 'en-US',
+                })
+              }
               className="rounded-md border border-line px-1.5 py-0.5 text-[10px] text-muted hover:text-fg"
             >
               {accent === 'en-US' ? 'Přízvuk US' : 'Přízvuk UK'}
@@ -286,19 +296,13 @@ export function MicRecorder({
                 <Sparkles className="size-3" /> {useAi ? 'AI přepis' : 'Přepis telefonu'}
               </button>
             )}
-            <button
-              onClick={useKeyboard}
-              aria-label="Psát nebo diktovat klávesnicí"
-              className="rounded-md border border-line p-0.5 px-1 text-muted hover:text-fg"
-            >
-              <Keyboard className="size-3" />
-            </button>
+            {!speakOnly && (
+              <button onClick={useKeyboard} aria-label="Psát nebo diktovat klávesnicí" className="rounded-md border border-line p-0.5 px-1 text-muted hover:text-fg">
+                <Keyboard className="size-3" />
+              </button>
+            )}
             {sr.text && !sr.listening && (
-              <button
-                onClick={() => sr.reset('')}
-                aria-label="Smazat"
-                className="rounded-md border border-line p-0.5 text-muted hover:text-fg"
-              >
+              <button onClick={() => sr.reset('')} aria-label="Smazat" className="rounded-md border border-line p-0.5 text-muted hover:text-fg">
                 <Trash2 className="size-3" />
               </button>
             )}

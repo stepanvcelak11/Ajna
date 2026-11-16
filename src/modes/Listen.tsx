@@ -1,7 +1,7 @@
 import { Check, ChevronRight, Snail, Volume2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { GameEnd, GameHeader } from '../components/game';
-import { MicRecorder } from '../components/MicRecorder';
+import { AnswerBox, HeardAs, ModeBadge, ModePicker, type InputMode } from '../components/answer';
 import { SpeakButton } from '../components/Speak';
 import { Btn, Card, Label, cx } from '../components/ui';
 import { phraseBank, sample, shuffle } from '../data/wordbank';
@@ -24,7 +24,9 @@ export default function Listen({ phrases, onDone, onContinue }: { phrases?: Phra
   const [xp, setXp] = useState(0);
   const [combo, setCombo] = useState(0);
   const [result, setResult] = useState<{ best: boolean } | null>(null);
-  const p = items[i];
+  const [mode, setMode] = useState<InputMode | null>(null);
+  const p = mode ? items[i] : undefined;
+  const title = mode === 'write' ? 'Diktát' : 'Poslech';
 
   useEffect(() => {
     setI(0);
@@ -52,7 +54,7 @@ export default function Listen({ phrases, onDone, onContinue }: { phrases?: Phra
 
   useEffect(() => {
     if (items.length && i === items.length && !result) {
-      setResult({ best: recordGame('listen', score, items.length) });
+      setResult({ best: recordGame(mode === 'write' ? 'dictation' : 'listen', score, items.length) });
       onDone?.(score, items.length);
     }
   }, [i]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -65,29 +67,43 @@ export default function Listen({ phrases, onDone, onContinue }: { phrases?: Phra
       </div>
     );
 
+  if (!mode)
+    return (
+      <ModePicker
+        game="listen"
+        title="Poslech"
+        subtitle="Uslyšíš větu: zopakuj ji nahlas, nebo ji napiš (diktát)"
+        onPick={(m) => {
+          setMode(m);
+          setRound((r) => r + 1);
+        }}
+        onBack={onContinue}
+      />
+    );
+
   if (!p)
     return (
       <div>
-        <GameHeader onBack={onContinue} title="Poslech" i={items.length} total={items.length} combo={0} />
+        <GameHeader onBack={onContinue} title={title} i={items.length} total={items.length} combo={0} />
         <GameEnd score={score} total={items.length} xp={xp} best={result?.best} icon="mic" tone="sky" extra="vět správně zachycených" onAgain={() => setRound((r) => r + 1)} onContinue={onContinue} />
       </div>
     );
 
   const submit = (said: string) => {
-    const r = checkPhrase(p, said);
+    const r = checkPhrase(p, said, true);
     setRes({ said, verdict: r.verdict });
-    const ok = r.verdict !== 'wrong';
+    const ok = r.verdict === 'ok';
     if (ok) {
       const c = combo + 1;
       const gain = 4 + (plays <= 1 ? 2 : 0) + (c >= 3 ? 1 : 0);
       setCombo(c);
       setScore((s) => s + 1);
       setXp((x) => x + gain);
-      recordActivity('listen', gain);
+      recordActivity(mode === 'write' ? 'dictation' : 'listen', gain);
       sfx.correct(c);
     } else {
       setCombo(0);
-      recordActivity('listen', 0);
+      recordActivity(mode === 'write' ? 'dictation' : 'listen', 0);
       sfx.wrong();
     }
   };
@@ -95,14 +111,17 @@ export default function Listen({ phrases, onDone, onContinue }: { phrases?: Phra
     setRes(null);
     setI((x) => x + 1);
   };
-  const ok = res && res.verdict !== 'wrong';
+  const ok = res && res.verdict === 'ok';
 
   return (
     <div>
-      <GameHeader onBack={onContinue} title="Poslech" subtitle="Poslechni si a zopakuj nebo napiš" i={i} total={items.length} combo={combo} />
+      <GameHeader onBack={() => setMode(null)} title={title} subtitle={mode === 'write' ? 'Poslechni si a napiš přesně, co zaznělo' : 'Poslechni si a zopakuj nahlas'} i={i} total={items.length} combo={combo} />
 
       <Card key={i} className="mb-4 flex flex-col items-center gap-4 py-6 animate-up">
-        <Label>Co zaznělo?</Label>
+        <div className="flex items-center gap-2">
+          <Label>Co zaznělo?</Label>
+          <ModeBadge mode={mode} />
+        </div>
         <div className="flex items-center gap-4">
           <button
             onClick={() => play()}
@@ -125,20 +144,20 @@ export default function Listen({ phrases, onDone, onContinue }: { phrases?: Phra
           <div className="w-full space-y-2 border-t border-line pt-4 text-center animate-up">
             <div className={cx('flex items-center justify-center gap-1.5 text-sm font-bold', ok ? 'text-emerald-500' : 'text-red-500')}>
               {ok ? <Check className="size-4" /> : <X className="size-4" />}
-              {res.verdict === 'ok' ? 'Přesně tak!' : res.verdict === 'close' ? 'Skoro přesně' : 'Zaznělo:'}
+              {res.verdict === 'ok' ? 'Přesně tak!' : res.verdict === 'close' ? 'Skoro, jedno slovo nesedí. Zaznělo:' : 'Zaznělo:'}
             </div>
             <div className="flex items-center justify-center gap-2">
               <div className="text-xl font-semibold">{p.en}</div>
               <SpeakButton text={p.en} compact />
             </div>
             <div className="text-sm text-muted">{p.cz}</div>
-            {res.verdict !== 'ok' && <div className="text-xs text-muted">Ty: „{res.said}“</div>}
+            {res.verdict !== 'ok' && <HeardAs mode={mode} said={res.said} />}
           </div>
         )}
       </Card>
 
       {!res ? (
-        <MicRecorder resetKey={`${round}-${i}`} submitLabel="Ověřit" placeholder="Řekni nebo napiš, co jsi slyšel…" hint="Zopakuj, co jsi slyšel" onSubmit={submit} />
+        <AnswerBox mode={mode} resetKey={`${round}-${i}`} placeholder="Napiš, co jsi slyšel…" hint="Zopakuj nahlas, co jsi slyšel" onSubmit={submit} />
       ) : (
         <Btn variant="primary" className="h-12 w-full" onClick={next}>
           {i + 1 < items.length ? 'Další' : 'Výsledky'} <ChevronRight className="size-4" />

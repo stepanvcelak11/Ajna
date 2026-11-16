@@ -68,11 +68,15 @@ export const sameWord = (a: string, b: string) => a === b || (a.length >= 5 && b
 
 export type Verdict = 'ok' | 'close' | 'wrong';
 
-export function checkPhrase(p: Phrase, answer: string): { verdict: Verdict; target: string } {
+/**
+ * strict: words must match exactly (writing = correct spelling, speaking = the recogniser heard
+ * exactly that word, so a mispronounced word fails). Case, punctuation and contractions still don't matter.
+ */
+export function checkPhrase(p: Pick<Phrase, 'en' | 'alt'>, answer: string, strict = false): { verdict: Verdict; target: string } {
   const a = words(answer);
   let best = { d: Infinity, target: p.en };
   for (const t of [p.en, ...(p.alt ?? [])]) {
-    const d = lev(a, words(t), sameWord);
+    const d = lev(a, words(t), strict ? (x: string, y: string) => x === y : sameWord);
     if (d < best.d) best = { d, target: t };
   }
   const len = words(best.target).length;

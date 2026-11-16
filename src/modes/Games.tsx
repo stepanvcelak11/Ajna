@@ -1,7 +1,7 @@
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Hand, Keyboard, Mic } from 'lucide-react';
 import { Icon } from '../components/icons';
 import { cx } from '../components/ui';
-import { GAME_LIST, gameOfDay } from '../data/games';
+import { GAME_LIST, gameOfDay, type GameInput } from '../data/games';
 import { wordleDoneToday } from '../lib/plan';
 import { navigate } from '../lib/router';
 import { ttsSupported } from '../lib/speech';
@@ -72,7 +72,13 @@ export default function Games() {
 
       {GAME_LIST.map((cat) => (
         <section key={cat.title}>
-          <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted">{cat.title}</div>
+          <div className="mb-2 flex items-center gap-2">
+            <InputIcon input={cat.input} />
+            <div className="min-w-0">
+              <div className="text-sm font-bold">{cat.title}</div>
+              <div className="text-[11px] leading-tight text-muted">{cat.desc}</div>
+            </div>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             {cat.games.map((g) => {
               const st = games[g.id];
@@ -103,5 +109,36 @@ export default function Games() {
         </section>
       ))}
     </div>
+  );
+}
+
+function InputIcon({ input }: { input: GameInput }) {
+  const cls = 'grid size-9 shrink-0 place-items-center rounded-xl';
+  if (input === 'both')
+    return (
+      <span className={cx(cls, 'w-14 gap-0.5 bg-gradient-to-r from-rose-500/15 to-sky-500/15')}>
+        <span className="flex items-center gap-0.5">
+          <Mic className="size-4 text-rose-500" />
+          <span className="text-[10px] text-muted">/</span>
+          <Keyboard className="size-4 text-sky-500" />
+        </span>
+      </span>
+    );
+  if (input === 'speak')
+    return (
+      <span className={cx(cls, 'bg-rose-500/15 text-rose-500')}>
+        <Mic className="size-5" />
+      </span>
+    );
+  if (input === 'write')
+    return (
+      <span className={cx(cls, 'bg-sky-500/15 text-sky-500')}>
+        <Keyboard className="size-5" />
+      </span>
+    );
+  return (
+    <span className={cx(cls, 'bg-amber-500/15 text-amber-500')}>
+      <Hand className="size-5" />
+    </span>
   );
 }

@@ -235,6 +235,7 @@ export async function callJson<T>(opts: CallOpts): Promise<T> {
 const TRANSCRIBE_PROMPT =
   'This is a short recording of a Czech learner speaking English. Transcribe EXACTLY what they say, word for word. ' +
   'Keep every grammar mistake and wrong word, do NOT correct or improve anything. Skip only "uh/um". ' +
+  'If a word is mispronounced so that it sounds like a different word (e.g. "ship" instead of "sheep", "tree" instead of "three"), write the word you actually hear. ' +
   'If they say a Czech word, write it as they said it. If there is no clear speech, return an empty string. ' +
   'Return only the transcript, without quotes or comments.';
 
