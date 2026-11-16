@@ -92,6 +92,24 @@ export default function Roleplay() {
 
   const userTurns = msgs.filter((m) => m.who === 'user').length;
 
+  // free conversation on any topic: a friendly native speaker who keeps the chat going
+  const [topic, setTopic] = useState('');
+  const freeChat = (t: string) =>
+    begin({
+      id: `chat-${Date.now()}`,
+      title: `Casual chat about ${t}`,
+      cz: `Rozhovor: ${t}`,
+      icon: 'chat',
+      tone: 'violet',
+      aiRole: 'Sam, a friendly native English speaker and good listener',
+      userRole: 'Friend',
+      goal: `Have a relaxed conversation about "${t}". Share your opinion and experiences; ask Sam something too.`,
+      goalCz: `Povídej si o tématu „${t}“: řekni svůj názor a zkušenost, na něco se Sama zeptej.`,
+      opener: "Hey! So what's new with you? I heard you wanted to chat a bit.",
+      turns: 8,
+      level: levelId,
+    });
+
   const send = async (text: string) => {
     if (!sc) return;
     const history: Msg[] = [...msgs, { who: 'user', text }];
@@ -126,6 +144,34 @@ export default function Roleplay() {
     return (
       <div>
         <ModeHeader title="Hraní rolí" subtitle="Vyber situaci a mluv" below={<PracticeBar />} />
+        <Card className="mb-4 space-y-3 border-accent/40 bg-accent/5">
+          <div className="flex items-center gap-3">
+            <IconTile name="chat" tone="violet" />
+            <div>
+              <div className="text-sm font-semibold">Volný rozhovor</div>
+              <div className="text-xs text-muted">Pokecej s rodilým mluvčím na libovolné téma</div>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {['víkend', 'práce', 'jídlo', 'cestování', 'filmy a seriály', 'sport', 'plány na léto'].map((t) => (
+              <button key={t} onClick={() => freeChat(t)} className="rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium hover:border-accent/50">
+                {t}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              placeholder="Vlastní téma…"
+              className="h-10 flex-1 rounded-xl border border-line bg-surface-2 px-3 text-[16px] outline-none focus:border-accent/60"
+            />
+            <Btn variant="primary" className="h-10" disabled={!topic.trim()} onClick={() => freeChat(topic.trim())}>
+              Začít
+            </Btn>
+          </div>
+        </Card>
+        <Label className="mb-2">Situace</Label>
         <div className="space-y-2.5">
           {[...lessonScenario, ...[...SCENARIOS].sort((a, b) => Math.abs(a.level - levelId) - Math.abs(b.level - levelId) || a.level - b.level)].map((s) => (
             <Card key={s.id} onClick={() => begin(s)} className="flex items-center gap-3 hover:border-accent/50">
