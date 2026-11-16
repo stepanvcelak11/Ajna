@@ -30,6 +30,9 @@ const DAILY_GAMES: { route: Route; title: string; target: number; icon: IconName
   { route: 'pronounce', title: 'Výslovnost: 10 slov', target: 10, icon: 'mic', tone: 'rose' },
   { route: 'wordsearch', title: 'Osmisměrka', target: 1, icon: 'target', tone: 'emerald' },
   { route: 'crossword', title: 'Křížovka', target: 1, icon: 'layers', tone: 'rose' },
+  { route: 'dialogs', title: 'Dialog: 5 replik', target: 5, icon: 'dialog', tone: 'rose' },
+  { route: 'gaps', title: 'Doplňovačka: 10 vět', target: 10, icon: 'book', tone: 'sky' },
+  { route: 'hangman', title: 'Šibenice: 6 slov', target: 6, icon: 'target', tone: 'emerald' },
 ];
 
 export interface Task {

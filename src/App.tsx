@@ -50,6 +50,9 @@ const Crossword = lazy(() => import('./modes/Crossword'));
 const Pronounce = lazy(() => import('./modes/Pronounce'));
 const WordGame = lazy(() => import('./modes/WordGame'));
 const Spelling = lazy(() => import('./modes/Spelling'));
+const Dialogs = lazy(() => import('./modes/Dialogs'));
+const Hangman = lazy(() => import('./modes/Hangman'));
+const Gaps = lazy(() => import('./modes/Gaps'));
 import { Confetti } from './components/Confetti';
 import { BadgeWatcher } from './components/BadgeWatcher';
 import { Onboarding } from './components/Onboarding';
@@ -93,6 +96,9 @@ const SCREENS: Record<Route, ComponentType> = {
   pronounce: Pronounce,
   words: WordGame as ComponentType,
   spelling: Spelling,
+  dialogs: Dialogs,
+  hangman: Hangman,
+  gaps: Gaps,
 };
 
 const TABS: { route: Route; label: string; icon: typeof Home; match: Route[] }[] = [

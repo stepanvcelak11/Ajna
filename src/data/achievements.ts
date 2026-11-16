@@ -69,6 +69,8 @@ export const BADGES: Badge[] = [
   { id: 'numbers', title: 'Počtář', desc: 'Čísla poslechem 10/10', icon: 'coins', tone: 'sky', progress: (s) => [game(s, 'numbers').perfect ?? 0, 1] },
   { id: 'situations', title: 'Diplomat', desc: 'Co řekneš? bez chyby', icon: 'dialog', tone: 'pink', progress: (s) => [game(s, 'situations').perfect ?? 0, 1] },
   { id: 'blitz25', title: 'Bleskový', desc: 'V Blesku 25 bodů', icon: 'bolt', tone: 'amber', progress: (s) => [game(s, 'blitz').best, 25] },
+  { id: 'dialogs', title: 'Konverzátor', desc: '50 replik v Dialozích napoprvé', icon: 'dialog', tone: 'rose', progress: (s) => [game(s, 'dialogs').correct, 50] },
+  { id: 'hangman', title: 'Kat', desc: 'Šibenice 6/6', icon: 'target', tone: 'slate', progress: (s) => [game(s, 'hangman').perfect ?? 0, 1] },
   { id: 'week', title: 'Týden splněn', desc: 'Splň týdenní výzvu', icon: 'trophy', tone: 'emerald', progress: (s) => [s.weekClaim ? 1 : 0, 1] },
   { id: 'explorer', title: 'Průzkumník', desc: `Vyzkoušej všech ${EXPLORE.length} cvičení`, icon: 'target', tone: 'slate', progress: (s) => [explored(s), EXPLORE.length] },
 ];

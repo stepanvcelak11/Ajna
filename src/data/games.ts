@@ -35,6 +35,7 @@ export const GAME_LIST: { title: string; desc: string; input: GameInput; games: 
     desc: 'Mikrofon ti musí rozumět, takže trénuješ výslovnost',
     input: 'speak',
     games: [
+      { route: 'dialogs', id: 'dialogs', title: 'Dialogy', desc: 'Zahraj roli v rozhovoru', icon: 'dialog', bg: 'from-orange-500 to-red-600', input: 'speak', isNew: true },
       { route: 'pronounce', id: 'pronounce', title: 'Výslovnost', desc: 'th, w, ship × sheep…', icon: 'mic', bg: 'from-rose-500 to-pink-600', input: 'speak', isNew: true },
       { route: 'fluency', id: 'fluency', title: 'Mluv na čas', desc: 'Slova za minutu', icon: 'dialog', bg: 'from-lime-500 to-emerald-600', input: 'speak' },
     ],
@@ -45,6 +46,8 @@ export const GAME_LIST: { title: string; desc: string; input: GameInput; games: 
     input: 'write',
     games: [
       { route: 'spelling', id: 'spelling', title: 'Pravopis', desc: 'Slyšíš slovo → napiš ho', icon: 'book', bg: 'from-sky-500 to-indigo-600', input: 'write', isNew: true, tts: true },
+      { route: 'gaps', id: 'gaps', title: 'Doplňovačka', desc: 'Doplň slovo do věty', icon: 'book', bg: 'from-indigo-500 to-violet-600', input: 'write', isNew: true },
+      { route: 'hangman', id: 'hangman', title: 'Šibenice', desc: 'Hádej slovo po písmenech', icon: 'target', bg: 'from-slate-600 to-slate-800', input: 'write', isNew: true },
       { route: 'crossword', id: 'crossword', title: 'Křížovka', desc: 'Česká nápověda → anglicky', icon: 'layers', bg: 'from-rose-500 to-orange-500', input: 'write' },
     ],
   },
@@ -70,7 +73,7 @@ export const GAME_LIST: { title: string; desc: string; input: GameInput; games: 
 
 /** Featured game of the day rotates. */
 export function gameOfDay(): GameDef {
-  const all = GAME_LIST.flatMap((c) => c.games).filter((g) => g.route !== 'cards' && g.route !== 'fluency' && g.route !== 'pronounce' && (!g.tts || ttsSupported));
+  const all = GAME_LIST.flatMap((c) => c.games).filter((g) => g.route !== 'cards' && g.route !== 'fluency' && g.route !== 'pronounce' && g.route !== 'dialogs' && (!g.tts || ttsSupported));
   let h = 0;
   for (const ch of todayKey()) h = (h * 33 + ch.charCodeAt(0)) >>> 0;
   return all[h % all.length];
