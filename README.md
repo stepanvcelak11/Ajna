@@ -81,3 +81,4 @@ Every exercise follows the level: sentence length and grammar in the drill and t
 - **Flashcards (Kartičky)**: fast flip-and-rate vocabulary review with swipe gestures (right = know, left = again), CZ→EN or EN→CZ, uses the SRS schedule.
 - **Streak saver**: one missed day per 7 is forgiven automatically (shown with a lifebuoy in the week strip).
 - **Daily reminder**: adds a repeating calendar event (.ics) with an alert at the chosen time.
+- **Learning path (Cesta tab)**: the level's vocabulary and phrases split into units; each unit has 4 steps (new words quiz, phrase building, listening, mastery test) that unlock one after another and earn 1–3 stars.

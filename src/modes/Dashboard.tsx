@@ -41,6 +41,7 @@ const GAMES: { route: Route; title: string; desc: string; icon: IconName; bg: st
 ];
 
 import { dailyPlan, wordleDoneToday } from '../lib/plan';
+import { NODE_INFO, pathFor } from '../data/path';
 
 const WEEKDAYS = ['Ne', 'Po', 'Út', 'St', 'Čt', 'Pá', 'So'];
 
@@ -160,6 +161,9 @@ export default function Dashboard() {
           </div>
         )}
       </section>
+
+      {/* --- learning path --- */}
+      <PathCard level={level} />
 
       {/* --- what am I practising --- */}
       <section>
@@ -478,5 +482,29 @@ function ModeCard({ m, badge, offline, wide }: { m: ModeDef; badge?: number; off
         </span>
       )}
     </Card>
+  );
+}
+
+function PathCard({ level }: { level: number }) {
+  const stars = useStore((s) => s.path);
+  const units = pathFor(level);
+  const flat = units.flatMap((u) => u.nodes.map((n) => ({ u, n })));
+  const done = flat.filter((x) => stars[x.n.id]).length;
+  const cur = flat.find((x) => !stars[x.n.id]);
+  if (!flat.length) return null;
+  return (
+    <button onClick={() => navigate('path')} className="flex w-full items-center gap-3 rounded-2xl border border-accent/40 bg-accent/8 p-3.5 text-left transition active:scale-[0.99]">
+      <span className="grid size-12 shrink-0 place-items-center rounded-full border-b-4 border-[color-mix(in_oklab,var(--accent)_60%,black)] bg-accent text-white">
+        <Icon name={cur ? NODE_INFO[cur.n.kind].icon : 'trophy'} className="size-6" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[10px] font-bold uppercase tracking-wider text-accent">Cesta · {done}/{flat.length}</span>
+        <span className="block truncate text-sm font-semibold">{cur ? `Jednotka ${cur.u.n}: ${cur.u.title}` : 'Cesta pro tuto úroveň dokončena!'}</span>
+        <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-surface-3">
+          <span className="block h-full rounded-full bg-accent" style={{ width: `${(done / flat.length) * 100}%` }} />
+        </span>
+      </span>
+      <ChevronRight className="size-4 text-accent" />
+    </button>
   );
 }

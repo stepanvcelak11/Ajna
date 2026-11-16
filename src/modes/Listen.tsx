@@ -4,7 +4,8 @@ import { GameEnd, GameHeader } from '../components/game';
 import { MicRecorder } from '../components/MicRecorder';
 import { SpeakButton } from '../components/Speak';
 import { Btn, Card, Label, cx } from '../components/ui';
-import { phraseBank, sample } from '../data/wordbank';
+import { phraseBank, sample, shuffle } from '../data/wordbank';
+import type { Phrase } from '../data/phrases';
 import { checkPhrase, type Verdict } from '../lib/match';
 import { sfx } from '../lib/sfx';
 import { speak, ttsSupported } from '../lib/speech';
@@ -12,10 +13,10 @@ import { recordActivity, recordGame, useStore } from '../lib/store';
 
 const ROUND = 8;
 
-export default function Listen() {
+export default function Listen({ phrases, onDone, onContinue }: { phrases?: Phrase[]; onDone?: (score: number, total: number) => void; onContinue?: () => void } = {}) {
   const level = useStore((s) => s.settings.level);
   const [round, setRound] = useState(0);
-  const items = useMemo(() => sample(phraseBank(level), ROUND), [level, round]);
+  const items = useMemo(() => (phrases ? shuffle(phrases) : sample(phraseBank(level), ROUND)), [level, round, phrases]);
   const [i, setI] = useState(0);
   const [res, setRes] = useState<{ said: string; verdict: Verdict } | null>(null);
   const [plays, setPlays] = useState(0);
@@ -50,7 +51,10 @@ export default function Listen() {
   }, [p]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (items.length && i === items.length && !result) setResult({ best: recordGame('listen', score, items.length) });
+    if (items.length && i === items.length && !result) {
+      setResult({ best: recordGame('listen', score, items.length) });
+      onDone?.(score, items.length);
+    }
   }, [i]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!ttsSupported)
@@ -65,7 +69,7 @@ export default function Listen() {
     return (
       <div>
         <GameHeader title="Poslech" i={items.length} total={items.length} combo={0} />
-        <GameEnd score={score} total={items.length} xp={xp} best={result?.best} icon="mic" tone="sky" extra="vět správně zachycených" onAgain={() => setRound((r) => r + 1)} />
+        <GameEnd score={score} total={items.length} xp={xp} best={result?.best} icon="mic" tone="sky" extra="vět správně zachycených" onAgain={() => setRound((r) => r + 1)} onContinue={onContinue} />
       </div>
     );
 

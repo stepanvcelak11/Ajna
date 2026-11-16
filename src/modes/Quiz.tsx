@@ -24,8 +24,8 @@ interface Q {
 
 const gapOf = (w: Word) => w.example.match(/\{([^}]+)\}/)?.[1];
 
-function build(bank: Word[]): Q[] {
-  const words = sample(bank, ROUND);
+function build(bank: Word[], only?: Word[]): Q[] {
+  const words = only ? shuffle(only) : sample(bank, ROUND);
   return words.map((w, i) => {
     const kinds: Kind[] = ['cz-en', 'en-cz', 'cz-en'];
     if (ttsSupported) kinds.push('listen');
@@ -54,11 +54,11 @@ const PROMPT: Record<Kind, string> = {
   gap: 'Doplň do věty',
 };
 
-export default function Quiz() {
+export default function Quiz({ words, title = 'Kvíz', onDone, onContinue }: { words?: Word[]; title?: string; onDone?: (score: number, total: number) => void; onContinue?: () => void } = {}) {
   const level = useStore((s) => s.settings.level);
   const [round, setRound] = useState(0);
   const bank = useMemo(() => wordBank(level), [level, round]); // eslint-disable-line react-hooks/exhaustive-deps
-  const qs = useMemo(() => (bank.length >= 8 ? build(bank) : []), [bank]);
+  const qs = useMemo(() => (bank.length >= 8 ? build(bank, words) : []), [bank, words]);
   const [i, setI] = useState(0);
   const [picked, setPicked] = useState<string | null>(null);
   const [score, setScore] = useState(0);
@@ -140,7 +140,10 @@ export default function Quiz() {
 
   // record once when the last question is done (score state is final here)
   useEffect(() => {
-    if (qs.length && i === qs.length && !result) setResult({ best: recordGame('quiz', score, qs.length) });
+    if (qs.length && i === qs.length && !result) {
+      setResult({ best: recordGame('quiz', score, qs.length) });
+      onDone?.(score, qs.length);
+    }
   }, [i]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (bank.length < 8)
@@ -159,8 +162,8 @@ export default function Quiz() {
   if (!q)
     return (
       <div>
-        <GameHeader title="Kvíz" i={qs.length} total={qs.length} combo={0} />
-        <GameEnd score={score} total={qs.length} xp={xp} best={result?.best} extra={`nejdelší série ${best}×`} onAgain={() => setRound((r) => r + 1)}>
+        <GameHeader title={title} i={qs.length} total={qs.length} combo={0} />
+        <GameEnd score={score} total={qs.length} xp={xp} best={result?.best} extra={`nejdelší série ${best}×`} onAgain={() => setRound((r) => r + 1)} onContinue={onContinue}>
           {wrong.length > 0 && (
             <div className="space-y-2 text-left">
               <Label>Zopakuj si</Label>
@@ -192,7 +195,7 @@ export default function Quiz() {
 
   return (
     <div>
-      <GameHeader title="Kvíz" subtitle={`${score} správně · ${xp} XP`} i={i} total={qs.length} combo={combo} />
+      <GameHeader title={title} subtitle={`${score} správně · ${xp} XP`} i={i} total={qs.length} combo={combo} />
       <div className="mb-3 h-1 overflow-hidden rounded-full bg-surface-2">
         <div
           className={cx('h-full transition-[width] duration-100 ease-linear', left > SECONDS / 2 ? 'bg-emerald-500' : left > 3 ? 'bg-amber-500' : 'bg-red-500')}

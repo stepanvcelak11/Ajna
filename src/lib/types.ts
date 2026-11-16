@@ -133,6 +133,8 @@ export interface AppState {
   games: Record<string, GameStat>;
   /** achievement ids the learner has already been shown */
   badgesSeen: string[];
+  /** learning path: stars (1-3) per finished node id */
+  path: Record<string, number>;
   /** today's "word of the day" attempt */
   wordle: { day: string; guesses: string[] } | null;
 }

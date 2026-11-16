@@ -1,4 +1,4 @@
-import { AlertCircle, BookOpen, GraduationCap, Home, Settings as Cog, WifiOff } from 'lucide-react';
+import { AlertCircle, BookOpen, GraduationCap, Home, Map as MapIcon, Settings as Cog, WifiOff } from 'lucide-react';
 import { lazy, Suspense, useEffect, type ComponentType } from 'react';
 import { WordRescue } from './components/WordRescue';
 import { cx } from './components/ui';
@@ -36,6 +36,7 @@ const Traps = lazy(() => import('./modes/Traps'));
 const Wordle = lazy(() => import('./modes/Wordle'));
 const Cheatsheet = lazy(() => import('./modes/Cheatsheet'));
 const Cards = lazy(() => import('./modes/Cards'));
+const Path = lazy(() => import('./modes/Path'));
 import { Confetti } from './components/Confetti';
 import { BadgeWatcher } from './components/BadgeWatcher';
 import { Onboarding } from './components/Onboarding';
@@ -65,10 +66,12 @@ const SCREENS: Record<Route, ComponentType> = {
   wordle: Wordle,
   cheatsheet: Cheatsheet,
   cards: Cards,
+  path: Path,
 };
 
 const TABS: { route: Route; label: string; icon: typeof Home; match: Route[] }[] = [
   { route: 'home', label: 'Trénink', icon: Home, match: ['home', 'ladder', 'drill', 'monologue', 'roleplay', 'sprint', 'quiz', 'builder', 'listen', 'match', 'progress', 'grammar', 'placement', 'stories', 'traps', 'wordle', 'cheatsheet'] },
+  { route: 'path', label: 'Cesta', icon: MapIcon, match: ['path'] },
   { route: 'course', label: 'Učebnice', icon: GraduationCap, match: ['course'] },
   { route: 'vocab', label: 'Slovíčka', icon: BookOpen, match: ['vocab', 'vocab-review', 'cards'] },
   { route: 'mistakes', label: 'Chyby', icon: AlertCircle, match: ['mistakes', 'mistake-practice'] },
@@ -208,7 +211,7 @@ export default function App() {
       <nav
         style={IOS_STANDALONE ? { bottom: 'auto', top: 'var(--app-h, 100%)', transform: 'translateY(-100%)' } : undefined}
         className="fixed bottom-0 inset-x-0 z-40 border-t border-line bg-bg/85 backdrop-blur-xl pb-[env(safe-area-inset-bottom)]">
-        <div className="mx-auto max-w-xl grid grid-cols-5">
+        <div className="mx-auto max-w-xl grid grid-cols-6">
           {TABS.map((t) => {
             const active = t.match.includes(route);
             const b = badges[t.route];
@@ -216,7 +219,7 @@ export default function App() {
               <button
                 key={t.route}
                 onClick={() => navigate(t.route)}
-                className={cx('relative flex flex-col items-center gap-0.5 py-2.5 text-[11px] transition', active ? 'text-accent' : 'text-muted')}
+                className={cx('relative flex flex-col items-center gap-0.5 py-2.5 text-[10px] transition', active ? 'text-accent' : 'text-muted')}
               >
                 <t.icon className="size-5" />
                 {t.label}

@@ -41,16 +41,17 @@ function makeTask(p: Phrase): Task {
 
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 
-export default function Builder() {
+export default function Builder({ phrases, onDone, onContinue }: { phrases?: Phrase[]; onDone?: (score: number, total: number) => void; onContinue?: () => void } = {}) {
   const level = useStore((s) => s.settings.level);
   const [round, setRound] = useState(0);
   const tasks = useMemo(() => {
+    if (phrases) return shuffle(phrases).map(makeTask);
     const pool = phraseBank(level).filter((p) => {
       const n = tokens(p.en).length;
       return n >= 3 && n <= 10;
     });
     return sample(pool, ROUND).map(makeTask);
-  }, [level, round]);
+  }, [level, round, phrases]);
   const [i, setI] = useState(0);
   const [chosen, setChosen] = useState<Tile[]>([]);
   const [checked, setChecked] = useState<null | boolean>(null);
@@ -74,14 +75,17 @@ export default function Builder() {
   const t = tasks[i];
 
   useEffect(() => {
-    if (tasks.length && i === tasks.length && !result) setResult({ best: recordGame('builder', score, tasks.length) });
+    if (tasks.length && i === tasks.length && !result) {
+      setResult({ best: recordGame('builder', score, tasks.length) });
+      onDone?.(score, tasks.length);
+    }
   }, [i]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!t)
     return (
       <div>
         <GameHeader title="Skládání vět" i={tasks.length} total={tasks.length} combo={0} />
-        <GameEnd score={score} total={tasks.length} xp={xp} best={result?.best} extra="vět složených bez chyby" onAgain={() => setRound((r) => r + 1)} />
+        <GameEnd score={score} total={tasks.length} xp={xp} best={result?.best} extra="vět složených bez chyby" onAgain={() => setRound((r) => r + 1)} onContinue={onContinue} />
       </div>
     );
 

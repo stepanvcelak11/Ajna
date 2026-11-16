@@ -62,6 +62,8 @@ export const BADGES: Badge[] = [
   },
   { id: 'wordle10', title: 'Hádankář', desc: 'Zahraj si 10× hádání slov', icon: 'sparkle', tone: 'emerald', progress: (s) => [Object.values(s.days).reduce((n, d) => n + (d.modes?.wordle ?? 0), 0), 10] },
   { id: 'traps50', title: 'Lovec chytáků', desc: 'Odhal 50 chytáků', icon: 'target', tone: 'rose', progress: (s) => [game(s, 'traps').correct, 50] },
+  { id: 'path10', title: 'Poutník', desc: 'Dokonči 10 kroků na Cestě', icon: 'flag', tone: 'indigo', progress: (s) => [Object.keys(s.path).length, 10] },
+  { id: 'path3stars', title: 'Hvězdář', desc: 'Získej 30 hvězd na Cestě', icon: 'sparkle', tone: 'amber', progress: (s) => [Object.values(s.path).reduce((n, x) => n + x, 0), 30] },
   { id: 'explorer', title: 'Průzkumník', desc: `Vyzkoušej všech ${EXPLORE.length} cvičení`, icon: 'target', tone: 'slate', progress: (s) => [explored(s), EXPLORE.length] },
 ];
 

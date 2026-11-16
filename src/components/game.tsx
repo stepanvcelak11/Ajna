@@ -68,7 +68,9 @@ export function GameEnd({
   icon = 'trophy',
   tone = 'emerald',
   children,
+  onContinue,
 }: {
+  onContinue?: () => void;
   score: number;
   total: number;
   xp: number;
@@ -81,7 +83,7 @@ export function GameEnd({
 }) {
   const ratio = total ? score / total : 0;
   const route = useRoute();
-  const next = nextTask(route);
+  const next = onContinue ? undefined : nextTask(route);
   useEffect(() => {
     if (ratio >= 0.8) {
       celebrate();
@@ -123,6 +125,11 @@ export function GameEnd({
           </span>
           <Icon name="up" className="size-4 rotate-45 text-accent" />
         </button>
+      )}
+      {onContinue && (
+        <Btn variant="primary" className="h-12 w-full text-base" onClick={onContinue}>
+          Pokračovat na cestě
+        </Btn>
       )}
       <div className="flex gap-2 pt-1">
         <Btn className="flex-1" onClick={() => navigate('home')}>

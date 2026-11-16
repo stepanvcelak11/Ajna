@@ -29,7 +29,7 @@ export const defaultSettings: Settings = {
 };
 
 function initial(): AppState {
-  return { version: 1, settings: { ...defaultSettings }, vocab: [], mistakes: [], days: {}, addedPacks: [], levelLog: [], phraseStats: {}, games: {}, badgesSeen: [], wordle: null };
+  return { version: 1, settings: { ...defaultSettings }, vocab: [], mistakes: [], days: {}, addedPacks: [], levelLog: [], phraseStats: {}, games: {}, badgesSeen: [], wordle: null, path: {} };
 }
 
 function load(): AppState {
@@ -61,6 +61,7 @@ export function normalize(data: unknown): AppState {
     phraseStats: d.phraseStats && typeof d.phraseStats === 'object' ? d.phraseStats : {},
     games: d.games && typeof d.games === 'object' ? d.games : {},
     wordle: d.wordle && typeof d.wordle === 'object' ? d.wordle : null,
+    path: d.path && typeof d.path === 'object' ? d.path : {},
     // existing users: don't celebrate everything they unlocked before badges existed
     badgesSeen: Array.isArray(d.badgesSeen) ? d.badgesSeen : d.days && Object.keys(d.days).length ? ['__legacy'] : [],
   };
@@ -337,4 +338,9 @@ export function recordGame(id: string, score: number, total: number, time?: numb
     },
   }));
   return newBest && cur.plays > 0;
+}
+
+/** Save the best star rating for a learning-path node. */
+export function savePathStars(nodeId: string, stars: number) {
+  setState((s) => ({ ...s, path: { ...s.path, [nodeId]: Math.max(s.path[nodeId] ?? 0, stars) } }));
 }
