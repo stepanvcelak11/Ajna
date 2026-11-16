@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { SpeakButton } from '../components/Speak';
 import { Btn, Card, ExampleText, Label, cx } from '../components/ui';
 import { STARTER_PACKS } from '../data/starterPacks';
+import { TextExtract } from '../components/TextExtract';
 import { navigate } from '../lib/router';
 import { formatInterval, isDue, newSrs } from '../lib/srs';
 import { setState, uid, useStore } from '../lib/store';
@@ -27,6 +28,7 @@ export default function Vocab() {
   const added = useStore((s) => s.addedPacks);
   const level = useStore((s) => s.settings.level);
   const [q, setQ] = useState('');
+  const [extractOpen, setExtractOpen] = useState(false);
   const [filter, setFilter] = useState<'all' | 'due' | 'mine'>('all');
   const due = vocab.filter((v) => isDue(v.srs.dueDate)).length;
 
@@ -108,6 +110,9 @@ export default function Vocab() {
           <Btn variant="secondary" className="h-10 px-3" onClick={() => setUi({ rescueOpen: true })}>
             + Přidat
           </Btn>
+          <Btn variant="secondary" className="h-10 px-3" onClick={() => setExtractOpen(true)}>
+            Z textu
+          </Btn>
         </div>
         <div className="flex gap-1.5">
           {(['all', 'due', 'mine'] as const).map((f) => (
@@ -124,6 +129,8 @@ export default function Vocab() {
           ))}
         </div>
       </div>
+
+      <TextExtract open={extractOpen} onClose={() => setExtractOpen(false)} />
 
       {list.length === 0 ? (
         <Card className="text-center text-sm text-muted py-8">

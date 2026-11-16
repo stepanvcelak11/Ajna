@@ -427,3 +427,53 @@ export async function explainGrammar(topicId: string, topicEn: string): Promise<
   }
   return sheet;
 }
+
+// ---------- Tutor: answers learner questions in Czech ----------
+export interface TutorAnswer {
+  answer_cz: string;
+  examples: { en: string; cz: string }[];
+  words: { en: string; cz: string; pos: string; example: string }[];
+}
+
+export function askTutor(question: string, history: { q: string; a: string }[]): Promise<TutorAnswer> {
+  const { who } = lvl();
+  const past = history
+    .slice(-4)
+    .map((h) => `LEARNER: ${h.q}\nTUTOR: ${h.a}`)
+    .join('\n');
+  return callJson<TutorAnswer>({
+    system: `You are a friendly, precise English tutor for ${who}. The learner asks in Czech (or English). Answer in clear, simple Czech, short (max ~120 words), practical, with comparisons to Czech where useful. Never invent grammar rules.`,
+    user: `${past ? `EARLIER CONVERSATION:\n${past}\n\n` : ''}QUESTION: ${question}
+- answer_cz: the answer in Czech. You may use line breaks and "•" bullets. No markdown headings.
+- examples: 2-4 natural English example sentences {en, cz} that illustrate the answer.
+- words: 0-4 useful English words or phrases from the answer worth saving {en, cz, pos, example with the word wrapped in {braces}}.`,
+    schema: obj({
+      answer_cz: str,
+      examples: arr(obj({ en: str, cz: str })),
+      words: arr(obj({ en: str, cz: str, pos: str, example: str })),
+    }),
+  });
+}
+
+// ---------- Vocabulary from the learner's own text ----------
+export interface ExtractedWord {
+  en: string;
+  cz: string;
+  pos: string;
+  example: string;
+  collocation: string;
+}
+
+export async function extractVocab(text: string): Promise<ExtractedWord[]> {
+  const { level, who } = lvl();
+  const r = await callJson<{ words: ExtractedWord[] }>({
+    system: `You pick vocabulary worth learning for ${who}.`,
+    user: `From this English text, choose 6-12 words, phrasal verbs or collocations that are useful for everyday speaking and slightly above level ${level.cefr} (skip very basic words, names and rare technical terms).
+For each: en (base form), cz (natural Czech meaning in this context), pos, example (the sentence from the text, shortened if long, with the target wrapped in {braces}), collocation (typical pattern or empty string).
+TEXT:
+"""${text.slice(0, 6000)}"""`,
+    schema: obj({ words: arr(obj({ en: str, cz: str, pos: str, example: str, collocation: str })) }),
+    maxTokens: 2500,
+  });
+  return (r.words ?? []).filter((w) => w?.en && w?.cz);
+}

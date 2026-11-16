@@ -16,6 +16,7 @@ type ModeDef = { route: Route; title: string; desc: string; icon: IconName; tone
 
 const SPEAK_MODES: (ModeDef & { wide?: boolean })[] = [
   { route: 'stories', title: 'Příběhy', desc: 'Čti a poslouchej příběh, odpověz na otázky a převyprávěj ho', icon: 'book', tone: 'teal', offline: true, wide: true },
+  { route: 'tutor', title: 'Zeptej se učitele', desc: 'Cokoliv o angličtině, odpověď česky s příklady', icon: 'bulb', tone: 'amber', wide: true },
   { route: 'drill', title: 'Překlad vět', desc: 'Česká věta → řekni ji anglicky', icon: 'swap', tone: 'sky' },
   { route: 'ladder', title: 'Nabalování vět', desc: 'Od krátké věty po složitou', icon: 'ladder', tone: 'violet' },
   { route: 'monologue', title: 'Monolog', desc: 'Mluv volně, dostaneš rodilou verzi', icon: 'mic', tone: 'emerald' },
@@ -42,6 +43,8 @@ const GAMES: { route: Route; title: string; desc: string; icon: IconName; bg: st
 
 import { dailyPlan, wordleDoneToday } from '../lib/plan';
 import { NODE_INFO, pathFor } from '../data/path';
+import { phrasesFor } from '../data/phrases';
+import { SpeakButton } from '../components/Speak';
 
 const WEEKDAYS = ['Ne', 'Po', 'Út', 'St', 'Čt', 'Pá', 'So'];
 
@@ -164,6 +167,9 @@ export default function Dashboard() {
 
       {/* --- learning path --- */}
       <PathCard level={level} />
+
+      <PhraseOfDay level={level} />
+      <BackupNudge />
 
       {/* --- what am I practising --- */}
       <section>
@@ -506,5 +512,42 @@ function PathCard({ level }: { level: number }) {
       </span>
       <ChevronRight className="size-4 text-accent" />
     </button>
+  );
+}
+
+function PhraseOfDay({ level }: { level: number }) {
+  const [open, setOpen] = useState(false);
+  const pool = phrasesFor(level);
+  if (!pool.length) return null;
+  let h = 0;
+  for (const ch of todayKey()) h = (Math.imul(h, 31) + ch.charCodeAt(0)) | 0;
+  const p = pool[Math.abs(h) % pool.length];
+  return (
+    <Card onClick={() => setOpen(true)} className="flex items-center gap-3">
+      <IconTile name="chat" tone="sky" size="sm" />
+      <div className="min-w-0 flex-1">
+        <div className="text-[10px] font-bold uppercase tracking-wider text-muted">Fráze dne</div>
+        <div className="text-sm font-semibold">{p.cz}</div>
+        {open ? <div className="text-sm text-accent animate-fade">{p.en}</div> : <div className="text-xs text-muted">Ťukni a zkus to nejdřív říct sám</div>}
+      </div>
+      {open && <SpeakButton text={p.en} compact />}
+    </Card>
+  );
+}
+
+function BackupNudge() {
+  const last = useStore((s) => s.settings.lastBackup);
+  const active = useStore((s) => Object.keys(s.days).length);
+  const old = !last || Date.now() - new Date(last).getTime() > 14 * 86400000;
+  if (active < 5 || !old) return null;
+  return (
+    <Card onClick={() => navigate('settings')} className="flex items-center gap-3 border-amber-500/30">
+      <IconTile name="lifebuoy" tone="amber" size="sm" />
+      <div className="min-w-0 flex-1 text-xs">
+        <div className="text-sm font-semibold">Zálohuj si pokrok</div>
+        <div className="text-muted">Pokrok je jen v tomto telefonu. Záloha zabere 2 vteřiny (Nastavení → Export JSON).</div>
+      </div>
+      <ChevronRight className="size-4 text-muted" />
+    </Card>
   );
 }

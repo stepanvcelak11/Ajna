@@ -129,6 +129,7 @@ export default function Settings() {
 
   const doExport = () => {
     const blob = new Blob([exportJson()], { type: 'application/json' });
+    updateSettings({ lastBackup: new Date().toISOString() });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `ajna-backup-${new Date().toISOString().slice(0, 10)}.json`;

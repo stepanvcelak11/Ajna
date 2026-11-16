@@ -30,6 +30,8 @@ export interface Settings {
   onboarded: boolean;
   /** accent colour of the app */
   color: AccentColor;
+  /** ISO date of the last JSON backup */
+  lastBackup: string | null;
 }
 
 export interface SrsState {

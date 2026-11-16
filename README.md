@@ -82,3 +82,6 @@ Every exercise follows the level: sentence length and grammar in the drill and t
 - **Streak saver**: one missed day per 7 is forgiven automatically (shown with a lifebuoy in the week strip).
 - **Daily reminder**: adds a repeating calendar event (.ics) with an alert at the chosen time.
 - **Learning path (Cesta tab)**: the level's vocabulary and phrases split into units; each unit has 4 steps (new words quiz, phrase building, listening, mastery test) that unlock one after another and earn 1–3 stars.
+- **Ask the tutor (Zeptej se)**: chat with an AI English teacher in Czech; answers with examples, audio and one-tap word saving.
+- **Words from your own text**: paste an article, e-mail or lyrics and pick the AI-suggested words to learn.
+- **Phrase of the day** and a **backup reminder** (progress lives only on the device) on the dashboard.

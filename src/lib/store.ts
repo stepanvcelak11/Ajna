@@ -26,6 +26,7 @@ export const defaultSettings: Settings = {
   sound: true,
   onboarded: false,
   color: 'violet',
+  lastBackup: null,
 };
 
 function initial(): AppState {

@@ -37,6 +37,7 @@ const Wordle = lazy(() => import('./modes/Wordle'));
 const Cheatsheet = lazy(() => import('./modes/Cheatsheet'));
 const Cards = lazy(() => import('./modes/Cards'));
 const Path = lazy(() => import('./modes/Path'));
+const Tutor = lazy(() => import('./modes/Tutor'));
 import { Confetti } from './components/Confetti';
 import { BadgeWatcher } from './components/BadgeWatcher';
 import { Onboarding } from './components/Onboarding';
@@ -67,6 +68,7 @@ const SCREENS: Record<Route, ComponentType> = {
   cheatsheet: Cheatsheet,
   cards: Cards,
   path: Path,
+  tutor: Tutor,
 };
 
 const TABS: { route: Route; label: string; icon: typeof Home; match: Route[] }[] = [
@@ -194,13 +196,12 @@ export default function App() {
       {toastMsg && (
         <div
           style={
-            IOS_STANDALONE
-              ? { bottom: 'auto', top: `calc(var(--app-h, 100%) - ${showNav ? '4.75rem' : '1.5rem'} - env(safe-area-inset-bottom) - 2.5rem)` }
-              : undefined
+            IOS_STANDALONE && showNav ? { bottom: 'auto', top: 'calc(var(--app-h, 100%) - 4.75rem - env(safe-area-inset-bottom) - 2.5rem)' } : undefined
           }
           className={cx(
             'fixed left-1/2 -translate-x-1/2 z-[60] whitespace-nowrap rounded-full border border-line bg-surface px-4 py-2 text-sm shadow-lg animate-up',
-            showNav ? 'bottom-[calc(4.75rem+env(safe-area-inset-bottom))]' : 'bottom-[calc(1.5rem+env(safe-area-inset-bottom))]',
+            // exercises have their own controls at the bottom, so toasts go to the top there
+            showNav ? 'bottom-[calc(4.75rem+env(safe-area-inset-bottom))]' : 'top-[calc(0.75rem+env(safe-area-inset-top))]',
           )}
         >
           {toastMsg.text}
