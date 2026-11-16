@@ -47,6 +47,20 @@ export default function Games() {
       </button>
 
       <button
+        onClick={() => navigate('stories')}
+        className="flex w-full items-center gap-3 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 p-3.5 text-left text-white shadow-md transition active:scale-[0.99]"
+      >
+        <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-white/20">
+          <Icon name="book" className="size-6" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-bold">Příběhy ke čtení</span>
+          <span className="block text-xs text-white/85">Čti a poslouchej, překlad po větách, pak procvič slovíčka z textu</span>
+        </span>
+        <ChevronRight className="size-4" />
+      </button>
+
+      <button
         onClick={() => navigate('wordle')}
         className="flex w-full items-center gap-3 rounded-2xl border border-line bg-surface p-3 text-left transition active:scale-[0.99]"
       >

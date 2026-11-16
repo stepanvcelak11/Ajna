@@ -31,6 +31,7 @@ const REVIEW_MODES: (ModeDef & { wide?: boolean })[] = [
 
 import { dailyPlan, wordleDoneToday } from '../lib/plan';
 import { QuestCard } from '../components/QuestCard';
+import { BUILTIN_STORIES, openStory, storiesRead, storyOfDay } from '../data/stories';
 import { GAME_LIST, gameOfDay } from '../data/games';
 import { NODE_INFO, pathFor } from '../data/path';
 import { phrasesFor } from '../data/phrases';
@@ -151,6 +152,8 @@ export default function Dashboard() {
           </div>
         )}
       </section>
+
+      <StoryCard level={level} />
 
       {/* --- learning path --- */}
       <PathCard level={level} />
@@ -520,6 +523,43 @@ function GamesStrip() {
           </button>
         ))}
       </div>
+    </section>
+  );
+}
+
+function StoryCard({ level }: { level: number }) {
+  const st = storyOfDay(level);
+  const read = storiesRead().length;
+  if (!st) return null;
+  const mins = Math.max(2, Math.round(st.sentences.reduce((n, x) => n + x.en.split(' ').length, 0) / 60 + 2));
+  return (
+    <section>
+      <div className="mb-2 flex items-center justify-between">
+        <Label>Čtení · příběh na dnes</Label>
+        <button onClick={() => navigate('stories')} className="text-[11px] font-semibold text-accent">
+          Všechny příběhy ({BUILTIN_STORIES.length}) ›
+        </button>
+      </div>
+      <button
+        onClick={() => {
+          openStory(st.id);
+          navigate('stories');
+        }}
+        className="relative flex w-full items-center gap-4 overflow-hidden rounded-3xl bg-gradient-to-br from-teal-500 to-emerald-600 p-4 text-left text-white shadow-md transition active:scale-[0.99]"
+      >
+        <span className="pointer-events-none absolute -right-6 -top-8 size-28 rounded-full bg-white/15" />
+        <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-white/20">
+          <Icon name="book" className="size-8" />
+        </span>
+        <span className="relative min-w-0 flex-1">
+          <span className="block text-[10px] font-bold uppercase tracking-wider text-white/80">
+            {['A1', 'A2', 'B1', 'B2'][st.level - 1]} · ~{mins} min · přečteno {read}/{BUILTIN_STORIES.length}
+          </span>
+          <span className="block truncate text-lg font-extrabold">{st.title}</span>
+          <span className="block truncate text-xs text-white/85">{st.title_cz} · čti, poslouchej, překlad po větách</span>
+        </span>
+        <ChevronRight className="relative size-5" />
+      </button>
     </section>
   );
 }

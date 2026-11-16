@@ -1,6 +1,7 @@
 // A few original built-in stories so reading also works offline. AI generates new ones on demand.
 import type { Story } from '../lib/ai';
 import { MORE_STORIES } from './stories2';
+import { STORIES3 } from './stories3';
 
 const BASE: (Story & { id: string; level: number })[] = [
   {
@@ -99,7 +100,7 @@ const BASE: (Story & { id: string; level: number })[] = [
   },
 ];
 
-export const BUILTIN_STORIES = [...BASE, ...MORE_STORIES].sort((a, b) => a.level - b.level);
+export const BUILTIN_STORIES = [...BASE, ...MORE_STORIES, ...STORIES3].sort((a, b) => a.level - b.level);
 
 export const STORY_TOPICS = [
   { en: 'a funny mistake at a restaurant', cz: 'Vtipný omyl v restauraci', icon: 'plate', tone: 'orange' },
@@ -111,3 +112,29 @@ export const STORY_TOPICS = [
   { en: 'a strange day at the supermarket', cz: 'Zvláštní den v supermarketu', icon: 'bag', tone: 'emerald' },
   { en: 'learning to cook something new', cz: 'Učím se uvařit něco nového', icon: 'coffee', tone: 'rose' },
 ] as const;
+
+/** Ids of built-in stories the learner has finished (answered the questions). */
+export function storiesRead(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem('ajna-stories-done') ?? '[]');
+  } catch {
+    return [];
+  }
+}
+
+/** Suggested story: the first unread one at (or nearest to) the learner's level. */
+export function storyOfDay(level: number) {
+  const done = storiesRead();
+  const lv = Math.min(level, 4);
+  const byDist = [...BUILTIN_STORIES].sort((a, b) => Math.abs(a.level - lv) - Math.abs(b.level - lv) || a.level - b.level);
+  return byDist.find((s) => !done.includes(s.id)) ?? byDist[0];
+}
+
+/** Open a specific story when the Stories screen loads. */
+export function openStory(id: string) {
+  try {
+    sessionStorage.setItem('ajna-open-story', id);
+  } catch {
+    /* optional */
+  }
+}

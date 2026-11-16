@@ -1,4 +1,5 @@
-import { ArrowDown, ArrowRight, Delete, Lightbulb } from 'lucide-react';
+import { ArrowDown, ArrowRight, Lightbulb } from 'lucide-react';
+import { Keyboard } from '../components/Keyboard';
 import { useEffect, useMemo, useState } from 'react';
 import { GameEnd } from '../components/game';
 import { SpeakButton } from '../components/Speak';
@@ -7,9 +8,7 @@ import { makeCrossword, puzzleWords, type CrossWord } from '../data/puzzles';
 import { sfx } from '../lib/sfx';
 import { speak } from '../lib/speech';
 import { recordActivity, recordGame, useStore } from '../lib/store';
-import { isTypingTarget } from '../lib/ui';
 
-const ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
 const k = (r: number, c: number) => `${r},${c}`;
 const cellsOf = (w: CrossWord) => Array.from({ length: w.en.length }, (_, i) => (w.across ? k(w.r, w.c + i) : k(w.r + i, w.c)));
 
@@ -108,15 +107,6 @@ export default function Crossword() {
     setPos(Math.min(p, cells.length - 1));
   };
 
-  useEffect(() => {
-    const h = (e: KeyboardEvent) => {
-      if (isTypingTarget(e.target) || e.ctrlKey || e.metaKey) return;
-      if (/^[a-z]$/i.test(e.key)) type(e.key.toLowerCase());
-      else if (e.key === 'Backspace') type('back');
-    };
-    window.addEventListener('keydown', h);
-    return () => window.removeEventListener('keydown', h);
-  });
 
   const tapCell = (r: number, c: number) => {
     const id = k(r, c);
@@ -247,23 +237,7 @@ export default function Crossword() {
         </Card>
       )}
 
-      {/* keyboard */}
-      <div className="space-y-1.5">
-        {ROWS.map((row, r) => (
-          <div key={row} className="flex justify-center gap-1">
-            {[...row].map((ch) => (
-              <button key={ch} onClick={() => type(ch)} className="h-11 min-w-0 max-w-9 flex-1 rounded-lg border border-line bg-surface-2 text-sm font-bold uppercase active:scale-95">
-                {ch}
-              </button>
-            ))}
-            {r === 2 && (
-              <button onClick={() => type('back')} aria-label="Smazat" className="grid h-11 w-12 place-items-center rounded-lg border border-line bg-surface-2 active:scale-95">
-                <Delete className="size-5" />
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
+      <Keyboard onKey={type} space={false} compact />
 
       </div>
     </div>

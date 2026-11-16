@@ -1,6 +1,7 @@
 // Speaking-or-writing games: a start screen to pick ONE input mode, and the answer boxes for each mode.
 import { Keyboard, Mic, Send } from 'lucide-react';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Keyboard as Kb } from './Keyboard';
 import { sttSupported } from '../lib/speech';
 import { canTranscribe } from '../lib/llm';
 import { recordSpeech } from '../lib/store';
@@ -87,58 +88,50 @@ export function ModeBadge({ mode }: { mode: InputMode }) {
   );
 }
 
-/** Text box for writing games: no autocorrect, no spellcheck – the spelling has to be yours. */
+/** Writing games: the answer is typed on the app's own big keyboard (no autocorrect – the spelling has to be yours). */
 export function TypeAnswer({
   onSubmit,
   resetKey,
   placeholder = 'Napiš anglicky…',
   submitLabel = 'Ověřit',
-  autoFocus = true,
 }: {
   onSubmit: (text: string) => void;
   resetKey?: unknown;
   placeholder?: string;
   submitLabel?: string;
-  autoFocus?: boolean;
 }) {
   const [v, setV] = useState('');
-  const ref = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    setV('');
-    if (autoFocus) setTimeout(() => ref.current?.focus({ preventScroll: true }), 50);
-  }, [resetKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => setV(''), [resetKey]);
   const send = () => {
     const t = v.trim();
     if (!t) return;
     recordSpeech(t);
-    ref.current?.blur();
     onSubmit(t);
   };
+  const key = (k: string) => {
+    if (k === 'back') setV((x) => x.slice(0, -1));
+    else setV((x) => (k === ' ' && (!x || x.endsWith(' ')) ? x : x + k).slice(0, 120));
+  };
   return (
-    <form
-      className="flex gap-2"
-      onSubmit={(e) => {
-        e.preventDefault();
-        send();
-      }}
-    >
-      <input
-        ref={ref}
-        value={v}
-        onChange={(e) => setV(e.target.value)}
-        placeholder={placeholder}
-        autoComplete="off"
-        autoCorrect="off"
-        autoCapitalize="off"
-        spellCheck={false}
-        enterKeyHint="send"
-        className="h-14 min-w-0 flex-1 rounded-2xl border border-line bg-surface-2 px-4 text-[17px] outline-none focus:border-accent/60"
-      />
-      <Btn variant="primary" type="submit" className="h-14 shrink-0 px-4" disabled={!v.trim()}>
-        <Send className="size-4" />
-        <span className="hidden min-[380px]:inline">{submitLabel}</span>
-      </Btn>
-    </form>
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <div className="flex min-h-14 min-w-0 flex-1 items-center rounded-2xl border border-accent/50 bg-surface-2 px-4 text-[19px] font-semibold tracking-wide">
+          {v ? (
+            <span className="break-all">
+              {v}
+              <span className="ml-0.5 inline-block h-6 w-0.5 translate-y-1 animate-pulse bg-accent" />
+            </span>
+          ) : (
+            <span className="text-base font-normal text-muted/70">{placeholder}</span>
+          )}
+        </div>
+        <Btn variant="primary" className="h-14 shrink-0 px-4" disabled={!v.trim()} onClick={send}>
+          <Send className="size-4" />
+          <span className="hidden min-[380px]:inline">{submitLabel}</span>
+        </Btn>
+      </div>
+      <Kb onKey={key} onEnter={send} enterDisabled={!v.trim()} />
+    </div>
   );
 }
 

@@ -1,14 +1,15 @@
-import { CornerDownLeft, Delete, Lightbulb } from 'lucide-react';
+import { Lightbulb } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { GameHeader } from '../components/game';
 import { IconTile, LangBadge } from '../components/icons';
 import { SpeakButton } from '../components/Speak';
+import { Keyboard } from '../components/Keyboard';
 import { Btn, Card, cx } from '../components/ui';
 import { WORDS5, wordOfDay } from '../data/wordle';
 import { navigate } from '../lib/router';
 import { sfx } from '../lib/sfx';
 import { addVocab, hasVocab, recordActivity, recordGame, setState, todayKey, useStore } from '../lib/store';
-import { celebrate, isTypingTarget, toast } from '../lib/ui';
+import { celebrate, toast } from '../lib/ui';
 
 const TRIES = 6;
 type Mark = 'hit' | 'near' | 'miss';
@@ -31,7 +32,6 @@ function score(guess: string, word: string): Mark[] {
   return res;
 }
 
-const ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
 const COLORS: Record<Mark, string> = {
   hit: 'bg-emerald-500 border-emerald-500 text-white',
   near: 'bg-amber-500 border-amber-500 text-white',
@@ -97,16 +97,6 @@ export default function Wordle() {
     else if (/^[a-z]$/.test(k) && cur.length < 5) setCur((c) => c + k);
   };
 
-  useEffect(() => {
-    const h = (e: KeyboardEvent) => {
-      if (isTypingTarget(e.target) || e.ctrlKey || e.metaKey) return;
-      if (e.key === 'Enter') type('enter');
-      else if (e.key === 'Backspace') type('back');
-      else if (/^[a-zA-Z]$/.test(e.key)) type(e.key.toLowerCase());
-    };
-    window.addEventListener('keydown', h);
-    return () => window.removeEventListener('keydown', h);
-  });
 
   const newPractice = () => {
     const w = WORDS5[Math.floor(Math.random() * WORDS5.length)];
@@ -137,7 +127,7 @@ export default function Wordle() {
         {hint && !over && <span className="text-xs text-muted">začíná na „{en[0].toUpperCase()}“</span>}
       </Card>
 
-      <div className="mx-auto mb-4 grid max-w-[16rem] gap-1.5">
+      <div className="mx-auto mb-3 grid max-w-[13rem] gap-1.5">
         {rows.map((row, r) => (
           <div key={r} className={cx('grid grid-cols-5 gap-1.5', row.active && shake && 'animate-shake')}>
             {Array.from({ length: 5 }, (_, c) => {
@@ -148,7 +138,7 @@ export default function Wordle() {
                   key={c}
                   style={mk ? { animationDelay: `${c * 90}ms` } : undefined}
                   className={cx(
-                    'grid aspect-square place-items-center rounded-xl border-2 text-2xl font-extrabold uppercase',
+                    'grid aspect-square place-items-center rounded-xl border-2 text-xl font-extrabold uppercase',
                     mk ? `${COLORS[mk]} animate-pop` : ch ? 'border-accent/60 bg-surface' : 'border-line bg-surface/50',
                   )}
                 >
@@ -189,29 +179,13 @@ export default function Wordle() {
         </Card>
       ) : (
         <div className="space-y-1.5 select-none">
-          {ROWS.map((row, r) => (
-            <div key={row} className="flex justify-center gap-1">
-              {r === 2 && (
-                <button onClick={() => type('enter')} aria-label="Potvrdit" className="grid h-12 w-12 place-items-center rounded-lg bg-accent text-white active:scale-95">
-                  <CornerDownLeft className="size-5" />
-                </button>
-              )}
-              {[...row].map((k) => (
-                <button
-                  key={k}
-                  onClick={() => type(k)}
-                  className={cx('h-12 min-w-0 flex-1 max-w-9 rounded-lg text-sm font-bold uppercase transition active:scale-95', keyMarks[k] ? COLORS[keyMarks[k]] : 'bg-surface-2 border border-line')}
-                >
-                  {k}
-                </button>
-              ))}
-              {r === 2 && (
-                <button onClick={() => type('back')} aria-label="Smazat" className="grid h-12 w-12 place-items-center rounded-lg border border-line bg-surface-2 active:scale-95">
-                  <Delete className="size-5" />
-                </button>
-              )}
-            </div>
-          ))}
+          <Keyboard
+            onKey={type}
+            onEnter={() => type('enter')}
+            space={false}
+            compact
+            marks={Object.fromEntries(Object.entries(keyMarks).map(([k, m]) => [k, `${COLORS[m as Mark]} border-0`]))}
+          />
           <div className="pt-2 text-center text-[11px] text-muted">
             <span className="mr-2 inline-block size-2.5 rounded-sm bg-emerald-500" /> správné místo
             <span className="ml-3 mr-2 inline-block size-2.5 rounded-sm bg-amber-500" /> jinde ve slově

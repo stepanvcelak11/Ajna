@@ -54,7 +54,15 @@ function loadLast(): Story | null {
 export default function Stories() {
   const level = useStore((s) => s.settings.level);
   const online = useOnline();
-  const [story, setStory] = useState<Story | null>(null);
+  const [story, setStory] = useState<Story | null>(() => {
+    try {
+      const id = sessionStorage.getItem('ajna-open-story');
+      sessionStorage.removeItem('ajna-open-story');
+      return BUILTIN_STORIES.find((x) => x.id === id) ?? null;
+    } catch {
+      return null;
+    }
+  });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [custom, setCustom] = useState('');
