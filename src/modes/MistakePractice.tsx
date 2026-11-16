@@ -1,3 +1,4 @@
+import { sfx } from '../lib/sfx';
 import { ChevronRight, RotateCcw } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FeedbackCard } from '../components/FeedbackCard';
@@ -88,6 +89,8 @@ export default function MistakePractice() {
       applyResult(m.id, r.passed);
       recordLevelResult(r.passed);
       if (r.passed) setScore((s) => ({ ok: s.ok + 1, mastered: s.mastered + (m.successCount + 1 >= 2 ? 1 : 0) }));
+      if (r.passed) sfx.correct();
+      else sfx.wrong();
     } catch (e) {
       setErr((e as Error).message);
     } finally {

@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { IconTile } from '../components/icons';
 import { Card, Label, ModeHeader, cx } from '../components/ui';
 import { BADGES } from '../data/achievements';
+import { WeeklyReport } from '../components/WeeklyReport';
 import { dayXp, rankOf, streak, todayKey, totalXp, useStore } from '../lib/store';
 
 const GAME_NAMES: Record<string, string> = { quiz: 'Kvíz', builder: 'Skládání vět', listen: 'Poslech', match: 'Párování', grammar: 'Gramatika', traps: 'Chytáky', wordle: 'Slovo dne' };
@@ -57,6 +58,8 @@ export default function Progress() {
           </span>
         </div>
       </div>
+
+      <WeeklyReport />
 
       <section>
         <div className="mb-2 flex items-center justify-between">

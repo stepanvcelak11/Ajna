@@ -10,6 +10,7 @@ import { navigate } from '../lib/router';
 import { IS_IOS, speak } from '../lib/speech';
 import { addVocab, getState, hasVocab, recordPhrase, useStore } from '../lib/store';
 import { isTypingTarget, toast } from '../lib/ui';
+import { sfx } from '../lib/sfx';
 import { checkPhrase, sameWord, words, type Verdict } from '../lib/match';
 
 const SESSION = 10;
@@ -82,6 +83,8 @@ export default function Sprint() {
     const ok = r.verdict !== 'wrong';
     setResult({ answer, ...r });
     if (!retry) recordPhrase(p.id, ok);
+    if (ok) sfx.correct(combo + 1);
+    else sfx.wrong();
     if (ok) {
       setCombo((c) => {
         setBest((b) => Math.max(b, c + 1));
