@@ -63,8 +63,9 @@ function CoachTip({ tip }: { tip: NonNullable<Msg['tip']> }) {
 
 export default function Roleplay() {
   const lesson = lessonOfTopic(useStore((s) => s.settings.focus));
+  const levelId = useStore((s) => s.settings.level);
   const lessonScenario: Scenario[] = lesson
-    ? [{ id: `lesson-${lesson.n}`, turns: 5, ...lesson.roleplay, icon: lesson.icon, tone: lesson.tone, title: `L${lesson.n}: ${lesson.roleplay.title}` }]
+    ? [{ id: `lesson-${lesson.n}`, turns: 5, level: 3, ...lesson.roleplay, icon: lesson.icon, tone: lesson.tone, title: `L${lesson.n}: ${lesson.roleplay.title}` }]
     : [];
   const [sc, setSc] = useState<Scenario | null>(null);
   const [msgs, setMsgs] = useState<Msg[]>([]);
@@ -126,14 +127,24 @@ export default function Roleplay() {
       <div>
         <ModeHeader title="Hraní rolí" subtitle="Vyber situaci a mluv" below={<PracticeBar />} />
         <div className="space-y-2.5">
-          {[...lessonScenario, ...SCENARIOS].map((s) => (
+          {[...lessonScenario, ...[...SCENARIOS].sort((a, b) => Math.abs(a.level - levelId) - Math.abs(b.level - levelId) || a.level - b.level)].map((s) => (
             <Card key={s.id} onClick={() => begin(s)} className="flex items-center gap-3 hover:border-accent/50">
               <IconTile name={s.icon} tone={s.tone} />
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-sm">{s.cz}</div>
                 <div className="text-xs text-muted">{s.title}</div>
               </div>
-              <div className="text-[11px] text-muted">{s.turns} tahů</div>
+              <div className="text-right">
+                <div
+                  className={cx(
+                    'text-[10px] font-semibold rounded-full px-2 py-0.5',
+                    s.level === levelId ? 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400' : s.level > levelId ? 'bg-amber-500/12 text-amber-600 dark:text-amber-400' : 'bg-surface-3 text-muted',
+                  )}
+                >
+                  {s.level === levelId ? 'pro tebe' : s.level > levelId ? 'těžší' : 'lehčí'}
+                </div>
+                <div className="mt-1 text-[10px] text-muted">{s.turns} replik</div>
+              </div>
             </Card>
           ))}
         </div>

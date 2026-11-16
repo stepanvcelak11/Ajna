@@ -172,20 +172,32 @@ export function MicRecorder({
           className={cx(
             'relative size-16 shrink-0 rounded-full grid place-items-center transition no-callout touch-none select-none',
             'disabled:opacity-40',
-            sr.listening ? 'bg-red-500 text-white scale-105 shadow-lg shadow-red-500/30' : 'bg-accent text-white shadow-lg shadow-accent/30',
+            sr.listening
+              ? sr.status === 'starting'
+                ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30'
+                : 'bg-red-500 text-white scale-105 shadow-lg shadow-red-500/30'
+              : 'bg-accent text-white shadow-lg shadow-accent/30',
           )}
         >
-          {sr.listening && <span className="absolute inset-0 rounded-full bg-red-500/40 animate-ping" />}
+          {sr.listening && sr.status !== 'starting' && <span className="absolute inset-0 rounded-full bg-red-500/40 animate-ping" />}
           {sr.listening ? <MicOff className="size-7 relative" /> : <Mic className="size-7" />}
         </button>
 
         <div className="flex-1 min-w-0">
           <div className="text-xs text-muted leading-snug">
-            {sr.listening
-              ? micMode === 'ptt'
-                ? 'Mluv… pusť pro pauzu na přemýšlení'
-                : 'Poslouchám… klidně se zastav a přemýšlej'
-              : hint ?? (micMode === 'ptt' ? 'Drž tlačítko a mluv' : 'Ťukni a mluv')}
+            {sr.listening ? (
+              sr.status === 'starting' ? (
+                <span className="text-amber-600 dark:text-amber-400">Zapínám mikrofon… chvilku počkej</span>
+              ) : sr.status === 'hearing' ? (
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium">Slyším tě…</span>
+              ) : micMode === 'ptt' ? (
+                'Mluv… pusť pro pauzu na přemýšlení'
+              ) : (
+                'Poslouchám, mluv. Klidně se zastav a přemýšlej.'
+              )
+            ) : (
+              hint ?? (micMode === 'ptt' ? 'Drž tlačítko a mluv' : 'Ťukni a mluv')
+            )}
           </div>
           <div className="mt-1 flex items-center gap-1.5">
             <button

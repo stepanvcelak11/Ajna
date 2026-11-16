@@ -54,7 +54,23 @@ export const FLUENCY_CHUNKS: Record<DrillContextId | 'general', { en: string; cz
   ],
 };
 
-/** Simpler chunks for levels 1–2. */
+/** Starter chunks for true beginners (level 1). */
+export const A1_CHUNKS: { en: string; cz: string }[] = [
+  { en: 'I like', cz: 'Mám rád' },
+  { en: "I don't like", cz: 'Nemám rád' },
+  { en: 'I want to', cz: 'Chci' },
+  { en: 'I have to', cz: 'Musím' },
+  { en: 'Can I', cz: 'Můžu' },
+  { en: 'There is', cz: 'Je tam / Je tu' },
+  { en: 'I usually', cz: 'Obvykle' },
+  { en: 'I live in', cz: 'Bydlím v' },
+  { en: 'I work as', cz: 'Pracuju jako' },
+  { en: 'How much is', cz: 'Kolik stojí' },
+  { en: 'Where is', cz: 'Kde je' },
+  { en: "I'd like", cz: 'Dal bych si / Chtěl bych' },
+];
+
+/** Simple chunks for level 2. */
 export const BASIC_CHUNKS: { en: string; cz: string }[] = [
   { en: 'I think (that)', cz: 'Myslím, že' },
   { en: 'To be honest,', cz: 'Upřímně řečeno,' },
@@ -81,20 +97,37 @@ export const LADDER_THEMES = [
   'technology problems',
 ];
 
-export const MONOLOGUE_PROMPTS = [
-  { en: 'Explain to a colleague why a project is delayed.', cz: 'Vysvětli kolegovi, proč má projekt zpoždění.' },
-  { en: 'Describe what you did last weekend.', cz: 'Popiš, co jsi dělal minulý víkend.' },
-  { en: 'Talk about a trip that went wrong.', cz: 'Vyprávěj o výletě, který se nepovedl.' },
-  { en: 'Describe your typical working day.', cz: 'Popiš svůj typický pracovní den.' },
-  { en: 'Recommend a film or series and say why.', cz: 'Doporuč film nebo seriál a řekni proč.' },
-  { en: 'Explain how to get from your home to the city centre.', cz: 'Vysvětli, jak se dostat od tebe domů do centra.' },
-  { en: "Talk about a habit you'd like to change.", cz: 'Mluv o zlozvyku, který bys chtěl změnit.' },
-  { en: 'Describe a person who influenced you.', cz: 'Popiš člověka, který tě ovlivnil.' },
-  { en: 'Complain politely about a product you bought online.', cz: 'Zdvořile si stěžuj na produkt koupený online.' },
-  { en: 'What are your plans for the next few months?', cz: 'Jaké máš plány na příštích pár měsíců?' },
-  { en: 'Pros and cons of working from home.', cz: 'Výhody a nevýhody práce z domova.' },
-  { en: 'Describe the place where you grew up.', cz: 'Popiš místo, kde jsi vyrůstal.' },
+/** `level` = lowest difficulty level the prompt suits; shown for that level and the one above. */
+export const MONOLOGUE_PROMPTS: { en: string; cz: string; level: number }[] = [
+  { en: 'Introduce yourself: name, age, where you live, your job.', cz: 'Představ se: jméno, věk, kde bydlíš, co děláš.', level: 1 },
+  { en: 'Describe your family.', cz: 'Popiš svou rodinu.', level: 1 },
+  { en: 'What do you eat and drink in a normal day?', cz: 'Co běžně jíš a piješ během dne?', level: 1 },
+  { en: 'Describe your flat or house.', cz: 'Popiš svůj byt nebo dům.', level: 1 },
+  { en: 'What do you like and not like doing?', cz: 'Co rád děláš a co ne?', level: 1 },
+  { en: 'Describe your town: what is there?', cz: 'Popiš své město: co tam je?', level: 1 },
+  { en: 'Describe what you did last weekend.', cz: 'Popiš, co jsi dělal minulý víkend.', level: 2 },
+  { en: 'Describe your typical day.', cz: 'Popiš svůj typický den.', level: 2 },
+  { en: 'What are you going to do this weekend?', cz: 'Co budeš dělat tento víkend?', level: 2 },
+  { en: 'Talk about your last holiday.', cz: 'Vyprávěj o své poslední dovolené.', level: 2 },
+  { en: 'Compare your town with Prague.', cz: 'Porovnej své město s Prahou.', level: 2 },
+  { en: 'Explain how to get from your home to the city centre.', cz: 'Vysvětli, jak se dostat od tebe domů do centra.', level: 2 },
+  { en: 'Recommend a film or series and say why.', cz: 'Doporuč film nebo seriál a řekni proč.', level: 3 },
+  { en: 'Talk about a trip that went wrong.', cz: 'Vyprávěj o výletě, který se nepovedl.', level: 3 },
+  { en: "Talk about a habit you'd like to change.", cz: 'Mluv o zlozvyku, který bys chtěl změnit.', level: 3 },
+  { en: 'What would you do if you had a year off?', cz: 'Co bys dělal, kdybys měl rok volna?', level: 3 },
+  { en: 'Describe the place where you grew up and how it has changed.', cz: 'Popiš místo, kde jsi vyrůstal, a jak se změnilo.', level: 3 },
+  { en: 'Describe a person who influenced you.', cz: 'Popiš člověka, který tě ovlivnil.', level: 3 },
+  { en: 'Explain to a colleague why a project is delayed.', cz: 'Vysvětli kolegovi, proč má projekt zpoždění.', level: 4 },
+  { en: 'Complain politely about a product you bought online.', cz: 'Zdvořile si stěžuj na produkt koupený online.', level: 4 },
+  { en: 'Pros and cons of working from home.', cz: 'Výhody a nevýhody práce z domova.', level: 4 },
+  { en: 'Should cities ban cars from the centre? Argue your view.', cz: 'Měla by města zakázat auta v centru? Obhaj svůj názor.', level: 4 },
+  { en: 'Describe a decision you regret and what you would do differently.', cz: 'Popiš rozhodnutí, kterého lituješ, a co bys udělal jinak.', level: 5 },
 ];
+
+export function monologuePromptsFor(level: number) {
+  const fit = MONOLOGUE_PROMPTS.filter((p) => p.level === level || p.level === level - 1 || (level >= 4 && p.level >= 3));
+  return fit.length ? fit : MONOLOGUE_PROMPTS;
+}
 
 export interface Scenario {
   id: string;
@@ -108,9 +141,67 @@ export interface Scenario {
   goalCz: string;
   opener: string;
   turns: number;
+  /** difficulty level the scene fits best */
+  level: number;
 }
 
 export const SCENARIOS: Scenario[] = [
+  {
+    id: 'cafe',
+    title: 'Ordering in a café',
+    cz: 'Objednávka v kavárně',
+    icon: 'coffee',
+    tone: 'orange',
+    aiRole: 'Friendly barista',
+    userRole: 'Customer',
+    goal: 'Order a drink and something to eat, ask the price and pay by card.',
+    goalCz: 'Objednej si pití a něco k jídlu, zeptej se na cenu a zaplať kartou.',
+    opener: 'Hi! What can I get you?',
+    turns: 4,
+    level: 1,
+  },
+  {
+    id: 'meet',
+    title: 'Meeting someone new',
+    cz: 'Seznámení',
+    icon: 'chat',
+    tone: 'violet',
+    aiRole: 'A friendly person at a party (Emma)',
+    userRole: 'Guest',
+    goal: 'Introduce yourself and answer simple questions: where you are from, your job, your family, what you like.',
+    goalCz: 'Představ se a odpověz na jednoduché otázky: odkud jsi, práce, rodina, co máš rád.',
+    opener: "Hi! I'm Emma. What's your name?",
+    turns: 5,
+    level: 1,
+  },
+  {
+    id: 'directions',
+    title: 'Asking the way',
+    cz: 'Ptáš se na cestu',
+    icon: 'home',
+    tone: 'teal',
+    aiRole: 'Local person in London',
+    userRole: 'Tourist',
+    goal: 'Ask how to get to the train station, how far it is and if you can walk.',
+    goalCz: 'Zeptej se, jak se dostat na nádraží, jak je to daleko a jestli se dá jít pěšky.',
+    opener: 'Hello! You look a bit lost. Can I help you?',
+    turns: 4,
+    level: 1,
+  },
+  {
+    id: 'shop',
+    title: 'Clothes shop',
+    cz: 'V obchodě s oblečením',
+    icon: 'bag',
+    tone: 'pink',
+    aiRole: 'Shop assistant',
+    userRole: 'Customer',
+    goal: 'Find a jacket in your size and colour, try it on and ask if there is a cheaper one.',
+    goalCz: 'Najdi bundu ve své velikosti a barvě, vyzkoušej ji a zeptej se na levnější.',
+    opener: 'Hello! Are you looking for anything in particular?',
+    turns: 4,
+    level: 2,
+  },
   {
     id: 'hotel',
     title: 'Hotel room problem',
@@ -123,6 +214,7 @@ export const SCENARIOS: Scenario[] = [
     goalCz: 'Klimatizace nefunguje a venku je hluk. Získej jiný pokoj nebo slevu.',
     opener: 'Good evening! Front desk, this is Anna speaking. How can I help you?',
     turns: 5,
+    level: 3,
   },
   {
     id: 'smalltalk',
@@ -136,6 +228,7 @@ export const SCENARIOS: Scenario[] = [
     goalCz: 'Nezávazně pokecej před začátkem hovoru: víkend, počasí, práce.',
     opener: "Hi! Looks like we're the first ones here. How's everything in Prague?",
     turns: 5,
+    level: 2,
   },
   {
     id: 'pharmacy',
@@ -149,6 +242,7 @@ export const SCENARIOS: Scenario[] = [
     goalCz: 'Vysvětli, že tě dva dny bolí v krku a hlava, a požádej o něco, co pomůže.',
     opener: 'Hello there, what can I do for you today?',
     turns: 5,
+    level: 2,
   },
   {
     id: 'restaurant',
@@ -162,6 +256,7 @@ export const SCENARIOS: Scenario[] = [
     goalCz: 'Dostal jsi špatné jídlo a máš alergii na ořechy. Zdvořile to vyřeš.',
     opener: "Here you go — enjoy your meal! Is everything alright?",
     turns: 4,
+    level: 3,
   },
   {
     id: 'interview',
@@ -175,6 +270,7 @@ export const SCENARIOS: Scenario[] = [
     goalCz: 'Představ se, mluv o zkušenostech a proč chceš tu práci.',
     opener: 'Thanks for coming in today. So, to start with, could you tell me a little bit about yourself?',
     turns: 6,
+    level: 4,
   },
   {
     id: 'train',
@@ -188,6 +284,7 @@ export const SCENARIOS: Scenario[] = [
     goalCz: 'Vlak měl zpoždění a ujel ti přípoj na letiště. Najdi nejrychlejší alternativu a zeptej se na jízdenku.',
     opener: 'Hi, next please! How can I help?',
     turns: 5,
+    level: 3,
   },
   {
     id: 'landlord',
@@ -201,5 +298,6 @@ export const SCENARIOS: Scenario[] = [
     goalCz: 'Pračka od včera teče. Domluv opravu ještě tento týden.',
     opener: 'Hello, Peters speaking.',
     turns: 5,
+    level: 3,
   },
 ];

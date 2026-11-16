@@ -4,7 +4,7 @@ import { FeedbackCard } from '../components/FeedbackCard';
 import { MicRecorder } from '../components/MicRecorder';
 import { SpeakButton } from '../components/Speak';
 import { Btn, Card, ErrorBox, Label, ModeHeader, Spinner, cx } from '../components/ui';
-import { BASIC_CHUNKS, DRILL_CONTEXTS, FLUENCY_CHUNKS, type DrillContextId } from '../data/content';
+import { A1_CHUNKS, BASIC_CHUNKS, DRILL_CONTEXTS, FLUENCY_CHUNKS, type DrillContextId } from '../data/content';
 import { evaluate, generateDrill, type DrillItem } from '../lib/ai';
 import type { Evaluation } from '../lib/types';
 import { recordLevelResult } from '../lib/store';
@@ -16,13 +16,14 @@ import { Icon, IconTile } from '../components/icons';
 
 type Ctx = DrillContextId | 'lesson';
 
-/** Chunks the AI may choose from: simple ones for levels 1–2, context-specific ones above. */
+/** Chunks the AI may choose from: beginner ones at level 1, simple ones at level 2, context-specific ones above. */
 function chunkPool(c: Ctx, level: number) {
   const shuffle = <T,>(a: T[]) => [...a].sort(() => Math.random() - 0.5);
-  if (level <= 1) return shuffle(BASIC_CHUNKS);
+  if (level <= 1) return shuffle(A1_CHUNKS);
+  if (level === 2) return shuffle(BASIC_CHUNKS);
   const ctx = c === 'lesson' ? 'general' : c;
   const specific = ctx === 'general' ? [] : FLUENCY_CHUNKS[ctx];
-  if (level === 2) return shuffle([...BASIC_CHUNKS, ...specific]).slice(0, 14);
+  if (level === 3) return shuffle([...BASIC_CHUNKS.slice(0, 6), ...specific, ...FLUENCY_CHUNKS.general]).slice(0, 14);
   return shuffle([...specific, ...FLUENCY_CHUNKS.general]).slice(0, 14);
 }
 

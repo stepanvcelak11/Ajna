@@ -10,12 +10,69 @@ export interface StarterPack {
   id: string;
   title: string;
   cz: string;
+  /** difficulty level the pack fits (1 = A1 … 4 = B2) */
+  level: number;
   items: StarterItem[];
 }
 
 export const STARTER_PACKS: StarterPack[] = [
   {
+    id: 'a1-basics',
+    level: 1,
+    title: 'First words',
+    cz: 'Úplné základy: lidé a věci',
+    items: [
+      { en: 'brother', cz: 'bratr', pos: 'noun', example: 'My {brother} lives in Brno.' },
+      { en: 'sister', cz: 'sestra', pos: 'noun', example: 'I have one {sister}.' },
+      { en: 'children', cz: 'děti', pos: 'noun (plural)', example: 'They have two {children}.', collocation: 'one child, two children' },
+      { en: 'friend', cz: 'kamarád, přítel', pos: 'noun', example: 'This is my {friend} Tom.' },
+      { en: 'breakfast', cz: 'snídaně', pos: 'noun', example: 'I have {breakfast} at seven.', collocation: 'have breakfast (NE "eat a breakfast")' },
+      { en: 'bread', cz: 'chleba', pos: 'noun', example: 'Can I have some {bread}, please?' },
+      { en: 'water', cz: 'voda', pos: 'noun', example: 'A glass of {water}, please.' },
+      { en: 'kitchen', cz: 'kuchyň', pos: 'noun', example: 'Mum is in the {kitchen}.' },
+      { en: 'bedroom', cz: 'ložnice', pos: 'noun', example: 'Our flat has two {bedrooms}.' },
+      { en: 'shop', cz: 'obchod', pos: 'noun', example: 'The {shop} is closed today.' },
+      { en: 'station', cz: 'nádraží, stanice', pos: 'noun', example: 'Where is the {station}?' },
+      { en: 'money', cz: 'peníze', pos: 'noun', example: "I don't have any {money}.", collocation: 'money je jednotné číslo: money IS' },
+      { en: 'weather', cz: 'počasí', pos: 'noun', example: 'The {weather} is nice today.' },
+      { en: 'today', cz: 'dnes', pos: 'adverb', example: "I'm at home {today}." },
+      { en: 'tomorrow', cz: 'zítra', pos: 'adverb', example: 'See you {tomorrow}!' },
+      { en: 'expensive', cz: 'drahý', pos: 'adjective', example: 'This phone is very {expensive}.' },
+      { en: 'cheap', cz: 'levný', pos: 'adjective', example: 'The bus is {cheap}.' },
+      { en: 'tired', cz: 'unavený', pos: 'adjective', example: "I'm very {tired}." },
+      { en: 'hungry', cz: 'hladový (mít hlad)', pos: 'adjective', example: 'Are you {hungry}?', collocation: 'be hungry (NE "have hunger")' },
+      { en: 'every day', cz: 'každý den', pos: 'expression', example: 'I walk to work {every day}.' },
+    ],
+  },
+  {
+    id: 'a1-verbs',
+    level: 1,
+    title: 'First verbs',
+    cz: 'Základní slovesa',
+    items: [
+      { en: 'live', cz: 'bydlet, žít', pos: 'verb', example: 'I {live} in Prague.', collocation: 'live in + město' },
+      { en: 'work', cz: 'pracovat', pos: 'verb', example: 'She {works} in a bank.', collocation: 'he/she works (-s!)' },
+      { en: 'want', cz: 'chtít', pos: 'verb', example: 'I {want} a new car.', collocation: 'want to + sloveso' },
+      { en: 'need', cz: 'potřebovat', pos: 'verb', example: 'I {need} some help.' },
+      { en: 'like', cz: 'mít rád, líbit se', pos: 'verb', example: 'I {like} this song.', collocation: 'like + -ing: I like swimming' },
+      { en: 'go', cz: 'jít, jet', pos: 'verb', example: 'We {go} to work by bus.' },
+      { en: 'come', cz: 'přijít, přijet', pos: 'verb', example: 'Can you {come} tomorrow?' },
+      { en: 'eat', cz: 'jíst', pos: 'verb', example: "I don't {eat} meat." },
+      { en: 'drink', cz: 'pít', pos: 'verb', example: 'Do you {drink} coffee?' },
+      { en: 'buy', cz: 'koupit', pos: 'verb', example: 'I want to {buy} a new jacket.' },
+      { en: 'pay', cz: 'platit', pos: 'verb', example: 'Can I {pay} by card?', collocation: 'pay by card / in cash' },
+      { en: 'speak', cz: 'mluvit (jazykem)', pos: 'verb', example: 'Do you {speak} English?' },
+      { en: 'understand', cz: 'rozumět', pos: 'verb', example: "Sorry, I don't {understand}." },
+      { en: 'know', cz: 'vědět, znát', pos: 'verb', example: "I don't {know} his number." },
+      { en: 'wait', cz: 'čekat', pos: 'verb', example: 'Please {wait} here.', collocation: 'wait for sb/sth' },
+      { en: 'help', cz: 'pomoct', pos: 'verb', example: 'Can you {help} me?' },
+      { en: 'open', cz: 'otevřít', pos: 'verb', example: 'Can I {open} the window?' },
+      { en: 'start', cz: 'začít', pos: 'verb', example: 'The film {starts} at eight.' },
+    ],
+  },
+  {
     id: 'phrasal',
+    level: 3,
     title: 'Essential phrasal verbs',
     cz: 'Základní frázová slovesa',
     items: [
@@ -38,6 +95,7 @@ export const STARTER_PACKS: StarterPack[] = [
   },
   {
     id: 'verbs',
+    level: 3,
     title: 'Everyday verbs & patterns',
     cz: 'Každodenní slovesa a vazby',
     items: [
@@ -60,6 +118,7 @@ export const STARTER_PACKS: StarterPack[] = [
   },
   {
     id: 'work',
+    level: 4,
     title: 'Workplace collocations',
     cz: 'Pracovní kolokace',
     items: [
@@ -79,6 +138,7 @@ export const STARTER_PACKS: StarterPack[] = [
   },
   {
     id: 'travel',
+    level: 3,
     title: 'Travel & logistics',
     cz: 'Cestování a logistika',
     items: [
@@ -97,6 +157,7 @@ export const STARTER_PACKS: StarterPack[] = [
   },
   {
     id: 'false-friends',
+    level: 3,
     title: 'False friends',
     cz: 'Falešní přátelé (Czenglish)',
     items: [
@@ -122,6 +183,7 @@ export const STARTER_PACKS: StarterPack[] = [
   },
   {
     id: 'make-do',
+    level: 2,
     title: 'make / do / take / have',
     cz: 'Kolokace se základními slovesy',
     items: [
@@ -145,6 +207,7 @@ export const STARTER_PACKS: StarterPack[] = [
   },
   {
     id: 'linkers',
+    level: 3,
     title: 'Linking words',
     cz: 'Spojovací výrazy do mluvení',
     items: [
@@ -167,6 +230,7 @@ export const STARTER_PACKS: StarterPack[] = [
   },
   {
     id: 'opinions',
+    level: 2,
     title: 'Feelings & opinions',
     cz: 'Pocity a názory',
     items: [
@@ -189,6 +253,7 @@ export const STARTER_PACKS: StarterPack[] = [
   },
   {
     id: 'everyday',
+    level: 2,
     title: 'Everyday life',
     cz: 'Domácnost, nákupy, zdraví',
     items: [

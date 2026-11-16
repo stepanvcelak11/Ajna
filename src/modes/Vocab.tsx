@@ -25,6 +25,7 @@ function addPack(id: string) {
 export default function Vocab() {
   const vocab = useStore((s) => s.vocab);
   const added = useStore((s) => s.addedPacks);
+  const level = useStore((s) => s.settings.level);
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<'all' | 'due' | 'mine'>('all');
   const due = vocab.filter((v) => isDue(v.srs.dueDate)).length;
@@ -51,13 +52,24 @@ export default function Vocab() {
       </div>
 
       <div>
-        <Label className="mb-2">Balíčky slovíček</Label>
+        <Label className="mb-2">Balíčky slovíček · nejdřív pro tvou úroveň</Label>
         <div className="flex gap-2 overflow-x-auto -mx-4 px-4 pb-1 snap-x">
-          {STARTER_PACKS.map((p) => {
+          {[...STARTER_PACKS].sort((a, b) => Math.abs(a.level - Math.min(level, 4)) - Math.abs(b.level - Math.min(level, 4)) || a.level - b.level).map((p) => {
             const has = added.includes(p.id);
+            const mine = p.level === Math.min(level, 4);
             return (
-              <div key={p.id} className="snap-start shrink-0 w-44 rounded-2xl border border-line bg-surface p-3">
-                <Package className="size-4 text-accent" />
+              <div key={p.id} className={cx('snap-start shrink-0 w-44 rounded-2xl border bg-surface p-3', mine ? 'border-accent/50' : 'border-line')}>
+                <div className="flex items-center justify-between">
+                  <Package className="size-4 text-accent" />
+                  <span
+                    className={cx(
+                      'rounded-full px-1.5 py-0.5 text-[10px] font-bold',
+                      mine ? 'bg-accent text-white' : 'bg-surface-3 text-muted',
+                    )}
+                  >
+                    {['A1', 'A2', 'B1', 'B2'][p.level - 1]}
+                  </span>
+                </div>
                 <div className="mt-2 text-sm font-medium leading-tight">{p.title}</div>
                 <div className="text-[11px] text-muted">
                   {p.cz} · {p.items.length}

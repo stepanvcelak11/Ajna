@@ -5,7 +5,7 @@ import { MicRecorder } from '../components/MicRecorder';
 import { SpeakButton } from '../components/Speak';
 import { ClickableText } from '../components/WordPopover';
 import { Btn, Card, ErrorBox, Label, ModeHeader, Spinner, cx } from '../components/ui';
-import { MONOLOGUE_PROMPTS } from '../data/content';
+import { monologuePromptsFor } from '../data/content';
 import { reformulate, type Reformulation } from '../lib/ai';
 import { speak } from '../lib/speech';
 import { addVocab, hasVocab, isMistakeSaved, saveMistake, useStore } from '../lib/store';
@@ -34,9 +34,10 @@ function similarity(ref: string, said: string) {
 export default function Monologue() {
   const focus = useStore((s) => s.settings.focus);
   const lesson = lessonOfTopic(focus);
-  const PROMPTS = lesson ? [...lesson.speaking, ...MONOLOGUE_PROMPTS] : MONOLOGUE_PROMPTS;
-  const LIMIT = getLevel(useStore((s) => s.settings.level)).monologueSec;
-  const [idx, setIdx] = useState(() => (lessonOfTopic(getState().settings.focus) ? 0 : Math.floor(Math.random() * MONOLOGUE_PROMPTS.length)));
+  const levelId = useStore((s) => s.settings.level);
+  const PROMPTS = lesson ? [...lesson.speaking, ...monologuePromptsFor(levelId)] : monologuePromptsFor(levelId);
+  const LIMIT = getLevel(levelId).monologueSec;
+  const [idx, setIdx] = useState(() => (lessonOfTopic(getState().settings.focus) ? 0 : Math.floor(Math.random() * 1000)));
   const [left, setLeft] = useState(LIMIT);
   const [running, setRunning] = useState(false);
   const [stopSig, setStopSig] = useState<number | undefined>(undefined);

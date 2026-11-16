@@ -51,5 +51,17 @@ Nastavení → Export JSON / Import. API keys are never included in the export.
 
 - **Daily goal (XP)**: every answer earns XP (more for longer answers); pick the goal in Settings (50–300 XP). The dashboard shows a progress ring, the week, the streak and a rank.
 - **Daily plan**: vocabulary review, one round of quick phrases, a rotating AI challenge and mistake practice. One button takes you to the next unfinished step.
-- **Quick phrases (Rychlé fráze)**: 108 high-frequency spoken sentences in four levels. Czech → say it in English, with an instant offline check that tolerates contractions, numbers and small recognition errors. Phrases you get wrong come back first.
+- **Quick phrases (Rychlé fráze)**: 118 high-frequency spoken sentences in four levels (A1–B2). Czech → say it in English, with an instant offline check that tolerates contractions, numbers and small recognition errors. Phrases you get wrong come back first.
 - **Vocabulary packs**: false friends, make/do/take/have, linking words, feelings & opinions, everyday life (plus the original four).
+
+## Difficulty levels
+
+| Level | CEFR | What it means |
+|---|---|---|
+| 1 Úplné základy | A1 | 3–6 words, present tense only (be, have, like, can, there is), first 300 words |
+| 2 Základy | A2 | up to 9 words, past simple, going to, will, comparatives, and/but/because |
+| 3 Střední | B1 | present perfect, conditionals 1–2, modals, relative clauses, phrasal verbs |
+| 4 Pokročilý | B2 | all tenses, passive, reported speech, 3rd conditional |
+| 5 Expert | C1 | mixed conditionals, inversion, idioms, style |
+
+Every exercise follows the level: sentence length and grammar in the drill and the ladder, which fluency chunks are offered, the monologue topics and their length, the roleplay scenes (tagged lehčí / pro tebe / těžší), the quick phrases, and the order of the vocabulary packs.

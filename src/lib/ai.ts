@@ -131,9 +131,19 @@ ${lvl().focus}
 ${NATURAL_CZ}
 All three steps must describe ONE coherent, realistic situation.
 Create:
-- step1_cz: a short Czech core sentence about everyday life, e.g. "Včera jsem zmeškal vlak."
+${
+  lvl().level.id === 1
+    ? `- step1_cz: a very short Czech present-tense sentence, e.g. "Mám rád kávu."
+- step2_instruction_cz: Czech instruction adding ONE simple detail, format: "Přidej kdy: každé ráno."
+- step3_instruction_cz: Czech instruction adding a short contrast with "ale", format: "Přidej: ale nemám rád čaj."`
+    : lvl().level.id === 2
+      ? `- step1_cz: a short Czech core sentence, e.g. "Včera jsem zmeškal autobus."
+- step2_instruction_cz: Czech instruction adding a reason or time, format: "Přidej důvod: protože jsem zaspal."
+- step3_instruction_cz: Czech instruction adding "ale" or "tak", format: "Přidej: tak jsem šel pěšky."`
+      : `- step1_cz: a short Czech core sentence about everyday life, e.g. "Včera jsem zmeškal vlak."
 - step2_instruction_cz: Czech instruction that extends the SAME situation with a reason/time/purpose, format: "Rozšiř to o důvod: protože jsem zaspal."
-- step3_instruction_cz: Czech instruction adding a contrast or consequence, format: "Přidej kontrast: i když jsem si nastavil dva budíky." or "Přidej důsledek: takže jsem přišel pozdě na poradu."
+- step3_instruction_cz: Czech instruction adding a contrast or consequence, format: "Přidej kontrast: i když jsem si nastavil dva budíky." or "Přidej důsledek: takže jsem přišel pozdě na poradu."`
+}
 - reference_en: 3 natural English sentences at this level: the step-1 sentence, the combined step-2 sentence, the final full sentence.
 - topic: 2-4 word English label.
 Vary tenses and connectors appropriate to the level. Pick a fresh, concrete situation.`,
@@ -233,6 +243,7 @@ export function roleplayTurn(params: {
 
 You are ALSO playing a character in a short spoken roleplay. Stay in character in "reply": natural spoken English,
 1-2 short sentences (max ~30 words), friendly, vocabulary suited to ${lvl().who}, end with something the learner can respond to.
+${lvl().level.id === 1 ? 'The learner is a TRUE BEGINNER: use only very simple present-tense sentences (max 10 words each), the most common words, and ask simple questions they can answer in 3-5 words.' : lvl().level.id === 2 ? 'Keep your English simple (A2): short sentences, common words, present/past simple.' : ''}
 Never correct the learner inside "reply". Corrections go ONLY to coach_tip.`,
     user: `SCENARIO: ${params.scenario}
 YOU PLAY: ${params.aiRole}. LEARNER PLAYS: ${params.userRole}. LEARNER'S GOAL: ${params.goal}.
