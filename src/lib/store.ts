@@ -176,16 +176,37 @@ export function recordSpeech(text: string) {
   addXp(5 + Math.min(10, Math.floor(words / 2)));
 }
 
-export function streak(days: Record<string, { answers: number }>) {
+/**
+ * Current streak. One missed day per 7 days is forgiven automatically ("záchrana série"),
+ * so a single busy day doesn't wipe out weeks of work. Returns the days that were saved.
+ */
+export function streakInfo(days: Record<string, { answers: number }>) {
+  const done = (d: Date) => !!days[todayKey(d)]?.answers;
   let n = 0;
+  const saved: string[] = [];
+  let sinceFreeze = 99;
   const d = new Date();
   // today counts if practised; otherwise the streak is still alive from yesterday
-  if (!days[todayKey(d)]?.answers) d.setDate(d.getDate() - 1);
-  while (days[todayKey(d)]?.answers) {
-    n++;
+  if (!done(d)) d.setDate(d.getDate() - 1);
+  for (let guard = 0; guard < 3660; guard++) {
+    if (done(d)) {
+      n++;
+      sinceFreeze++;
+    } else {
+      const prev = new Date(d);
+      prev.setDate(prev.getDate() - 1);
+      if (n > 0 && sinceFreeze >= 7 && done(prev)) {
+        saved.push(todayKey(d));
+        sinceFreeze = 0;
+      } else break;
+    }
     d.setDate(d.getDate() - 1);
   }
-  return n;
+  return { n, saved };
+}
+
+export function streak(days: Record<string, { answers: number }>) {
+  return streakInfo(days).n;
 }
 
 function normEn(s: string) {

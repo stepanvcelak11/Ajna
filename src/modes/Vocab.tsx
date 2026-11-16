@@ -46,9 +46,14 @@ export default function Vocab() {
             {vocab.length} karet · {due} k opakování
           </div>
         </div>
+        <div className="flex gap-2">
+        <Btn disabled={!vocab.length} onClick={() => navigate('cards')}>
+          Kartičky
+        </Btn>
         <Btn variant="primary" disabled={!due} onClick={() => navigate('vocab-review')}>
           <Play className="size-4" /> Opakovat {due > 0 && `(${Math.min(due, 20)})`}
         </Btn>
+        </div>
       </div>
 
       <div>

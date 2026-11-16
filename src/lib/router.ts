@@ -23,9 +23,10 @@ export type Route =
   | 'stories'
   | 'traps'
   | 'wordle'
-  | 'cheatsheet';
+  | 'cheatsheet'
+  | 'cards';
 
-const ROUTES: Route[] = ['home', 'ladder', 'drill', 'monologue', 'roleplay', 'vocab', 'vocab-review', 'mistakes', 'mistake-practice', 'settings', 'course', 'sprint', 'quiz', 'builder', 'listen', 'match', 'progress', 'grammar', 'placement', 'stories', 'traps', 'wordle', 'cheatsheet'];
+const ROUTES: Route[] = ['home', 'ladder', 'drill', 'monologue', 'roleplay', 'vocab', 'vocab-review', 'mistakes', 'mistake-practice', 'settings', 'course', 'sprint', 'quiz', 'builder', 'listen', 'match', 'progress', 'grammar', 'placement', 'stories', 'traps', 'wordle', 'cheatsheet', 'cards'];
 
 function current(): Route {
   const h = location.hash.replace(/^#\/?/, '') as Route;

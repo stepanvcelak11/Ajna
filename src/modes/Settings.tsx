@@ -4,6 +4,7 @@ import { SpeakButton } from '../components/Speak';
 import { Btn, Card, Label, cx } from '../components/ui';
 import { navigate } from '../lib/router';
 import { ACCENTS } from '../lib/colors';
+import { downloadReminder } from '../lib/reminder';
 import { ANTHROPIC_MODELS, GEMINI_MODELS, OPENAI_MODELS, listGeminiModels } from '../lib/llm';
 import { sttSupported } from '../lib/speech';
 import { exportJson, importJson, resetAll, updateSettings, useStore } from '../lib/store';
@@ -268,6 +269,8 @@ export default function Settings() {
         <div className="text-[11px] text-muted">XP dostáváš za každou odpověď (víc za delší), za splněná cvičení a správné fráze.</div>
       </Card>
 
+      <ReminderCard />
+
       <Card className="space-y-3">
         <Label>Rozpoznávání řeči</Label>
         <div className="grid grid-cols-3 gap-2">
@@ -409,5 +412,27 @@ export default function Settings() {
         {s.theme === 'dark' ? <Moon className="size-3" /> : <Sun className="size-3" />} Ajna · offline-first · žádný server
       </div>
     </div>
+  );
+}
+
+function ReminderCard() {
+  const [time, setTime] = useState('19:00');
+  return (
+    <Card className="space-y-3">
+      <Label>Denní připomínka</Label>
+      <div className="text-xs text-muted">Přidá do kalendáře v telefonu opakovanou událost s upozorněním, ať nezapomeneš trénovat a neztratíš sérii.</div>
+      <div className="flex gap-2">
+        <input
+          type="time"
+          value={time}
+          onChange={(e) => setTime(e.target.value)}
+          className="h-11 rounded-xl border border-line bg-surface-2 px-3 text-[16px] outline-none focus:border-accent/60"
+        />
+        <Btn variant="primary" className="flex-1" onClick={() => downloadReminder(time || '19:00')}>
+          Přidat do kalendáře
+        </Btn>
+      </div>
+      <div className="text-[11px] text-muted">Série má i záchranu: jeden vynechaný den za týden se ti odpustí.</div>
+    </Card>
   );
 }

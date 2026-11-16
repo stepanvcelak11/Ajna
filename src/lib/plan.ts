@@ -37,7 +37,7 @@ export interface Task {
 export function dailyPlan(day: DayStats | undefined, vocabCount: number, vocabDue: number, mistakesDue: number): Task[] {
   const m = day?.modes ?? {};
   const tasks: Task[] = [];
-  const reviewed = m['vocab-review'] ?? 0;
+  const reviewed = (m['vocab-review'] ?? 0) + (m.cards ?? 0);
   if (vocabCount > 0 && (vocabDue > 0 || reviewed > 0)) {
     // step 1 + step 2 per card both count as answers, so 10 answers ≈ 5 cards
     tasks.push({ route: 'vocab-review', title: 'Zopakuj slovíčka', done: Math.min(reviewed, 10), target: vocabDue === 0 ? Math.min(reviewed, 10) : 10, icon: 'cards', tone: 'pink' });

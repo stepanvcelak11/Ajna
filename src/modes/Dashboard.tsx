@@ -9,7 +9,7 @@ import { lessonOfTopic } from '../data/textbook';
 import { hasKey } from '../lib/llm';
 import { navigate, type Route } from '../lib/router';
 import { isDue } from '../lib/srs';
-import { dayXp, levelSuggestion, rankOf, streak, todayKey, topTraps, totalXp, updateSettings, useStore } from '../lib/store';
+import { dayXp, levelSuggestion, rankOf, streakInfo, todayKey, topTraps, totalXp, updateSettings, useStore } from '../lib/store';
 import { useOnline } from '../lib/ui';
 
 type ModeDef = { route: Route; title: string; desc: string; icon: IconName; tone: Tone; offline?: boolean };
@@ -24,8 +24,9 @@ const SPEAK_MODES: (ModeDef & { wide?: boolean })[] = [
 
 const REVIEW_MODES: (ModeDef & { wide?: boolean })[] = [
   { route: 'vocab-review', title: 'Slovíčka', desc: 'Vybav si slovo a použij ho', icon: 'cards', tone: 'pink', offline: true },
+  { route: 'cards', title: 'Kartičky', desc: 'Rychle: otoč, ohodnoť, švihni', icon: 'layers', tone: 'violet', offline: true },
   { route: 'mistake-practice', title: 'Moje chyby', desc: 'Procvič, co ti nešlo', icon: 'target', tone: 'rose' },
-  { route: 'cheatsheet', title: 'Gramatický tahák', desc: 'Pravidla česky, příklady a typické chyby ke každému tématu', icon: 'bulb', tone: 'indigo', offline: true, wide: true },
+  { route: 'cheatsheet', title: 'Gramatický tahák', desc: 'Pravidla česky a typické chyby', icon: 'bulb', tone: 'indigo', offline: true },
 ];
 
 // colourful game cards; all of them work offline
@@ -93,7 +94,7 @@ export default function Dashboard() {
   const active = mistakes.filter((m) => !m.mastered);
   const traps = topTraps(active.length ? active : mistakes, 3);
 
-  const badge: Partial<Record<Route, number>> = { 'vocab-review': vocabDue, 'mistake-practice': mistakesDue };
+  const badge: Partial<Record<Route, number>> = { 'vocab-review': vocabDue, cards: vocabDue, 'mistake-practice': mistakesDue };
 
   return (
     <div className="space-y-6">
@@ -375,7 +376,7 @@ function Hero() {
   const goal = useStore((s) => s.settings.dailyGoal);
   const k = todayKey();
   const xp = dayXp(days[k]);
-  const st = streak(days);
+  const { n: st, saved } = streakInfo(days);
   const rank = rankOf(totalXp(days));
   const met = xp >= goal;
   const week = Array.from({ length: 7 }, (_, i) => {
@@ -430,7 +431,13 @@ function Hero() {
                 d.today && 'ring-2 ring-white/80 ring-offset-2 ring-offset-transparent',
               )}
             >
-              {d.v >= 1 ? <Check className="size-3.5" strokeWidth={3} /> : d.v > 0 ? <span className="size-1.5 rounded-full bg-white" /> : null}
+              {d.v >= 1 ? (
+                <Check className="size-3.5" strokeWidth={3} />
+              ) : d.v > 0 ? (
+                <span className="size-1.5 rounded-full bg-white" />
+              ) : saved.includes(d.key) ? (
+                <Icon name="lifebuoy" className="size-3.5 text-sky-200" />
+              ) : null}
             </div>
             <span className={cx('text-[10px]', d.today ? 'font-semibold' : 'text-white/60')}>{d.label}</span>
           </div>

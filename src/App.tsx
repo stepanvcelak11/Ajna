@@ -35,6 +35,7 @@ const Stories = lazy(() => import('./modes/Stories'));
 const Traps = lazy(() => import('./modes/Traps'));
 const Wordle = lazy(() => import('./modes/Wordle'));
 const Cheatsheet = lazy(() => import('./modes/Cheatsheet'));
+const Cards = lazy(() => import('./modes/Cards'));
 import { Confetti } from './components/Confetti';
 import { BadgeWatcher } from './components/BadgeWatcher';
 import { Onboarding } from './components/Onboarding';
@@ -63,12 +64,13 @@ const SCREENS: Record<Route, ComponentType> = {
   traps: Traps,
   wordle: Wordle,
   cheatsheet: Cheatsheet,
+  cards: Cards,
 };
 
 const TABS: { route: Route; label: string; icon: typeof Home; match: Route[] }[] = [
   { route: 'home', label: 'Trénink', icon: Home, match: ['home', 'ladder', 'drill', 'monologue', 'roleplay', 'sprint', 'quiz', 'builder', 'listen', 'match', 'progress', 'grammar', 'placement', 'stories', 'traps', 'wordle', 'cheatsheet'] },
   { route: 'course', label: 'Učebnice', icon: GraduationCap, match: ['course'] },
-  { route: 'vocab', label: 'Slovíčka', icon: BookOpen, match: ['vocab', 'vocab-review'] },
+  { route: 'vocab', label: 'Slovíčka', icon: BookOpen, match: ['vocab', 'vocab-review', 'cards'] },
   { route: 'mistakes', label: 'Chyby', icon: AlertCircle, match: ['mistakes', 'mistake-practice'] },
   { route: 'settings', label: 'Nastavení', icon: Cog, match: ['settings'] },
 ];

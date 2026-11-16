@@ -78,3 +78,6 @@ Every exercise follows the level: sentence length and grammar in the drill and t
 - **Grammar cheat sheet**: every level topic and textbook topic; AI writes a Czech explanation with forms, examples and typical Czech mistakes (cached for offline), one tap to practise it.
 - **Daily plan chaining**: game end screens offer the next unfinished task of the plan; exercises are full-screen without the tab bar.
 - **Accent colours**: six app colours in Settings.
+- **Flashcards (Kartičky)**: fast flip-and-rate vocabulary review with swipe gestures (right = know, left = again), CZ→EN or EN→CZ, uses the SRS schedule.
+- **Streak saver**: one missed day per 7 is forgiven automatically (shown with a lifebuoy in the week strip).
+- **Daily reminder**: adds a repeating calendar event (.ics) with an alert at the chosen time.
