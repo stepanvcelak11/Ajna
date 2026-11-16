@@ -289,6 +289,16 @@ export default function Settings() {
       </Card>
 
       <Card className="divide-y divide-line py-1.5">
+        <Row label="Zvuky a vibrace" sub="ve hrách">
+          <Seg
+            value={s.sound ? 'on' : 'off'}
+            options={[
+              { v: 'on', label: 'Zap' },
+              { v: 'off', label: 'Vyp' },
+            ]}
+            onChange={(v) => set({ sound: v === 'on' })}
+          />
+        </Row>
         <Row label="Vzhled">
           <Seg
             value={s.theme}

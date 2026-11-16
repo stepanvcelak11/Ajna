@@ -23,10 +23,11 @@ export const defaultSettings: Settings = {
   focus: null,
   dailyGoal: 100,
   sttEngine: 'auto',
+  sound: true,
 };
 
 function initial(): AppState {
-  return { version: 1, settings: { ...defaultSettings }, vocab: [], mistakes: [], days: {}, addedPacks: [], levelLog: [], phraseStats: {} };
+  return { version: 1, settings: { ...defaultSettings }, vocab: [], mistakes: [], days: {}, addedPacks: [], levelLog: [], phraseStats: {}, games: {}, badgesSeen: [] };
 }
 
 function load(): AppState {
@@ -51,6 +52,9 @@ export function normalize(data: unknown): AppState {
     addedPacks: Array.isArray(d.addedPacks) ? d.addedPacks : [],
     levelLog: Array.isArray(d.levelLog) ? d.levelLog : [],
     phraseStats: d.phraseStats && typeof d.phraseStats === 'object' ? d.phraseStats : {},
+    games: d.games && typeof d.games === 'object' ? d.games : {},
+    // existing users: don't celebrate everything they unlocked before badges existed
+    badgesSeen: Array.isArray(d.badgesSeen) ? d.badgesSeen : d.days && Object.keys(d.days).length ? ['__legacy'] : [],
   };
 }
 
@@ -273,4 +277,35 @@ export function recordPhrase(id: string, ok: boolean) {
     return { ...s, phraseStats: { ...s.phraseStats, [id]: { ok: cur.ok + (ok ? 1 : 0), fail: cur.fail + (ok ? 0 : 1), at: new Date().toISOString() } } };
   });
   if (ok) addXp(3);
+}
+
+/** A non-spoken answer (games): counts for the streak, the daily plan and XP. */
+export function recordActivity(route: string, xp: number) {
+  const k = todayKey();
+  setState((s) => {
+    const cur = s.days[k] ?? { words: 0, answers: 0 };
+    const modes = { ...(cur.modes ?? {}), [route]: (cur.modes?.[route] ?? 0) + 1 };
+    return { ...s, days: { ...s.days, [k]: { ...cur, xp: dayXp(cur), answers: cur.answers + 1, modes } } };
+  });
+  if (xp > 0) addXp(xp);
+}
+
+/** Store the result of a finished game round. Returns true if it is a new best. */
+export function recordGame(id: string, score: number, total: number, time?: number): boolean {
+  const cur = state.games[id] ?? { plays: 0, best: 0, correct: 0 };
+  const newBest = score > cur.best || (time !== undefined && score === total && (cur.bestTime === undefined || time < cur.bestTime));
+  setState((s) => ({
+    ...s,
+    games: {
+      ...s.games,
+      [id]: {
+        plays: cur.plays + 1,
+        best: Math.max(cur.best, score),
+        correct: cur.correct + score,
+        bestTime: time !== undefined && score === total ? Math.min(cur.bestTime ?? Infinity, time) : cur.bestTime,
+        perfect: (cur.perfect ?? 0) + (score === total ? 1 : 0),
+      },
+    },
+  }));
+  return newBest && cur.plays > 0;
 }

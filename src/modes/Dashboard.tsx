@@ -13,14 +13,27 @@ import { dayXp, levelSuggestion, rankOf, streak, todayKey, topTraps, totalXp, up
 import type { DayStats } from '../lib/types';
 import { useOnline } from '../lib/ui';
 
-const MODES: { route: Route; title: string; desc: string; icon: IconName; tone: Tone; offline?: boolean }[] = [
-  { route: 'sprint', title: 'Rychlé fráze', desc: '10 vět, okamžitá kontrola, i offline', icon: 'bolt', tone: 'orange', offline: true },
+type ModeDef = { route: Route; title: string; desc: string; icon: IconName; tone: Tone; offline?: boolean };
+
+const SPEAK_MODES: ModeDef[] = [
   { route: 'drill', title: 'Překlad vět', desc: 'Česká věta → řekni ji anglicky', icon: 'swap', tone: 'sky' },
   { route: 'ladder', title: 'Nabalování vět', desc: 'Od krátké věty po složitou', icon: 'ladder', tone: 'violet' },
   { route: 'monologue', title: 'Monolog', desc: 'Mluv volně, dostaneš rodilou verzi', icon: 'mic', tone: 'emerald' },
-  { route: 'roleplay', title: 'Hraní rolí', desc: 'Hotel, lékárna, pohovor…', icon: 'dialog', tone: 'amber' },
+  { route: 'roleplay', title: 'Hraní rolí', desc: 'Kavárna, lékárna, pohovor…', icon: 'dialog', tone: 'amber' },
+];
+
+const REVIEW_MODES: ModeDef[] = [
   { route: 'vocab-review', title: 'Slovíčka', desc: 'Vybav si slovo a použij ho', icon: 'cards', tone: 'pink', offline: true },
   { route: 'mistake-practice', title: 'Moje chyby', desc: 'Procvič, co ti nešlo', icon: 'target', tone: 'rose' },
+];
+
+// colourful game cards; all of them work offline
+const GAMES: { route: Route; title: string; desc: string; icon: IconName; bg: string; id?: string }[] = [
+  { route: 'sprint', title: 'Rychlé fráze', desc: 'Řekni větu, hned víš', icon: 'bolt', bg: 'from-orange-500 to-rose-500' },
+  { route: 'quiz', title: 'Kvíz', desc: '12 otázek na čas', icon: 'medal', bg: 'from-violet-500 to-indigo-600', id: 'quiz' },
+  { route: 'builder', title: 'Skládání vět', desc: 'Správný slovosled', icon: 'layers', bg: 'from-sky-500 to-blue-600', id: 'builder' },
+  { route: 'listen', title: 'Poslech', desc: 'Slyšíš a opakuješ', icon: 'chat', bg: 'from-emerald-500 to-teal-600', id: 'listen' },
+  { route: 'match', title: 'Párování', desc: 'Spoj dvojice na čas', icon: 'sparkle', bg: 'from-pink-500 to-fuchsia-600', id: 'match' },
 ];
 
 // The AI exercise of the day rotates so every day feels a bit different.
@@ -29,6 +42,13 @@ const CHALLENGES: { route: Route; title: string; target: number; unit: string; i
   { route: 'ladder', title: 'Nabal 3 věty', target: 3, unit: 'kroků', icon: 'ladder', tone: 'violet' },
   { route: 'monologue', title: 'Řekni 1 monolog', target: 1, unit: 'monolog', icon: 'mic', tone: 'emerald' },
   { route: 'roleplay', title: 'Zahraj si scénku (4 repliky)', target: 4, unit: 'replik', icon: 'dialog', tone: 'amber' },
+];
+
+const DAILY_GAMES: { route: Route; title: string; target: number; icon: IconName; tone: Tone }[] = [
+  { route: 'quiz', title: 'Zahraj si Kvíz', target: 12, icon: 'medal', tone: 'violet' },
+  { route: 'builder', title: 'Slož 8 vět', target: 8, icon: 'layers', tone: 'sky' },
+  { route: 'listen', title: 'Poslech: 8 vět', target: 8, icon: 'chat', tone: 'emerald' },
+  { route: 'match', title: 'Párování (3 tabule)', target: 15, icon: 'sparkle', tone: 'pink' },
 ];
 
 interface Task {
@@ -50,6 +70,8 @@ function dailyPlan(day: DayStats | undefined, vocabCount: number, vocabDue: numb
     tasks.push({ route: 'vocab-review', title: 'Zopakuj slovíčka', done: Math.min(reviewed, 10), target: vocabDue === 0 ? Math.min(reviewed, 10) : 10, icon: 'cards', tone: 'pink' });
   }
   tasks.push({ route: 'sprint', title: 'Rychlé fráze (1 kolo)', done: Math.min(m.sprint ?? 0, 10), target: 10, icon: 'bolt', tone: 'orange' });
+  const g = DAILY_GAMES[Math.floor(Date.now() / 86400000) % DAILY_GAMES.length];
+  tasks.push({ route: g.route, title: g.title, done: Math.min(m[g.route] ?? 0, g.target), target: g.target, icon: g.icon, tone: g.tone });
   const c = CHALLENGES[Math.floor(Date.now() / 86400000) % CHALLENGES.length];
   tasks.push({ route: c.route, title: c.title, done: Math.min(m[c.route] ?? 0, c.target), target: c.target, icon: c.icon, tone: c.tone, ai: true });
   const fixed = m['mistake-practice'] ?? 0;
@@ -92,6 +114,7 @@ export default function Dashboard() {
   const level = useStore((s) => s.settings.level);
   const focus = useStore((s) => s.settings.focus);
   const levelLog = useStore((s) => s.levelLog);
+  const games = useStore((s) => s.games);
   useStore((s) => s.settings.provider + s.settings.geminiKey + s.settings.anthropicKey + s.settings.openaiKey);
   const online = useOnline();
   const [levelOpen, setLevelOpen] = useState(false);
@@ -248,26 +271,62 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* --- modes --- */}
+      {/* --- games --- */}
       <section>
-        <Label className="mb-2">Cvičení</Label>
+        <div className="mb-2 flex items-center justify-between">
+          <Label>Hry · fungují i offline</Label>
+          <button onClick={() => navigate('progress')} className="text-[11px] font-medium text-accent">
+            Rekordy
+          </button>
+        </div>
         <div className="grid grid-cols-2 gap-3">
-          {MODES.map((m) => (
-            <Card key={m.route} onClick={() => navigate(m.route)} className="relative p-3.5 hover:border-accent/40">
-              <IconTile name={m.icon} tone={m.tone} />
-              <div className="mt-3 text-sm font-semibold leading-tight">{m.title}</div>
-              <div className="mt-0.5 text-xs text-muted leading-snug">{m.desc}</div>
-              {!!badge[m.route] && (
-                <span className="absolute top-3 right-3 min-w-6 h-6 px-1.5 rounded-full bg-accent text-white text-[11px] font-semibold grid place-items-center tabular-nums">
-                  {badge[m.route]}
+          {GAMES.map((g, n) => {
+            const st = g.id ? games[g.id] : undefined;
+            return (
+              <button
+                key={g.route}
+                onClick={() => navigate(g.route)}
+                className={cx(
+                  'relative overflow-hidden rounded-2xl bg-gradient-to-br p-3.5 text-left text-white shadow-md transition active:scale-[0.98]',
+                  g.bg,
+                  n === 0 && 'col-span-2 flex items-center gap-3',
+                )}
+              >
+                <span className="pointer-events-none absolute -right-5 -top-6 size-20 rounded-full bg-white/15" />
+                <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-white/20">
+                  <Icon name={g.icon} className="size-6" />
                 </span>
-              )}
-              {!online && !m.offline && (
-                <span className="absolute top-3.5 right-3.5 text-muted">
-                  <WifiOff className="size-3.5" />
+                <span className={cx('block', n !== 0 && 'mt-3')}>
+                  <span className="block text-sm font-bold leading-tight">{g.title}</span>
+                  <span className="mt-0.5 block text-xs leading-snug text-white/80">{g.desc}</span>
                 </span>
-              )}
-            </Card>
+                {st && st.plays > 0 && (
+                  <span className="absolute right-2.5 top-2.5 rounded-full bg-black/20 px-2 py-0.5 text-[10px] font-semibold tabular-nums">
+                    {g.id === 'match' && st.bestTime ? `${Math.floor(st.bestTime / 60)}:${String(st.bestTime % 60).padStart(2, '0')}` : `max ${st.best}`}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* --- AI speaking --- */}
+      <section>
+        <Label className="mb-2">Mluvení s AI</Label>
+        <div className="grid grid-cols-2 gap-3">
+          {SPEAK_MODES.map((m) => (
+            <ModeCard key={m.route} m={m} badge={badge[m.route]} offline={!online} />
+          ))}
+        </div>
+      </section>
+
+      {/* --- review --- */}
+      <section>
+        <Label className="mb-2">Opakování</Label>
+        <div className="grid grid-cols-2 gap-3">
+          {REVIEW_MODES.map((m) => (
+            <ModeCard key={m.route} m={m} badge={badge[m.route]} offline={!online} />
           ))}
         </div>
       </section>
@@ -334,7 +393,12 @@ function Hero() {
   const date = new Date().toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' });
 
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#7c5cff] via-[#6a4cf0] to-[#4b3bd1] p-5 text-white shadow-lg shadow-accent/25">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => navigate('progress')}
+      className="relative cursor-pointer overflow-hidden rounded-3xl bg-gradient-to-br from-[#7c5cff] via-[#6a4cf0] to-[#4b3bd1] p-5 text-white shadow-lg shadow-accent/25 transition active:scale-[0.99]"
+    >
       <div className="pointer-events-none absolute -right-10 -top-12 size-44 rounded-full bg-white/10" />
       <div className="pointer-events-none absolute -bottom-16 -left-8 size-40 rounded-full bg-white/5" />
       <div className="relative flex items-center gap-4">
@@ -381,7 +445,7 @@ function Hero() {
 
       <div className="relative mt-4">
         <div className="flex justify-between text-[10px] text-white/70">
-          <span>Hodnost {rank.rank} · {rank.name}</span>
+          <span>Hodnost {rank.rank} · {rank.name} · zobrazit pokrok ›</span>
           <span className="tabular-nums">
             {rank.into}/{rank.need} XP
           </span>
@@ -391,5 +455,25 @@ function Hero() {
         </div>
       </div>
     </div>
+  );
+}
+
+function ModeCard({ m, badge, offline }: { m: ModeDef; badge?: number; offline: boolean }) {
+  return (
+    <Card onClick={() => navigate(m.route)} className="relative p-3.5 hover:border-accent/40">
+      <IconTile name={m.icon} tone={m.tone} />
+      <div className="mt-3 text-sm font-semibold leading-tight">{m.title}</div>
+      <div className="mt-0.5 text-xs leading-snug text-muted">{m.desc}</div>
+      {!!badge && (
+        <span className="absolute right-3 top-3 grid h-6 min-w-6 place-items-center rounded-full bg-accent px-1.5 text-[11px] font-semibold tabular-nums text-white">
+          {badge}
+        </span>
+      )}
+      {offline && !m.offline && (
+        <span className="absolute right-3.5 top-3.5 text-muted">
+          <WifiOff className="size-3.5" />
+        </span>
+      )}
+    </Card>
   );
 }

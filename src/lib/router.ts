@@ -12,9 +12,14 @@ export type Route =
   | 'mistake-practice'
   | 'settings'
   | 'course'
-  | 'sprint';
+  | 'sprint'
+  | 'quiz'
+  | 'builder'
+  | 'listen'
+  | 'match'
+  | 'progress';
 
-const ROUTES: Route[] = ['home', 'ladder', 'drill', 'monologue', 'roleplay', 'vocab', 'vocab-review', 'mistakes', 'mistake-practice', 'settings', 'course', 'sprint'];
+const ROUTES: Route[] = ['home', 'ladder', 'drill', 'monologue', 'roleplay', 'vocab', 'vocab-review', 'mistakes', 'mistake-practice', 'settings', 'course', 'sprint', 'quiz', 'builder', 'listen', 'match', 'progress'];
 
 function current(): Route {
   const h = location.hash.replace(/^#\/?/, '') as Route;

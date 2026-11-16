@@ -1,5 +1,5 @@
 import { AlertCircle, BookOpen, GraduationCap, Home, Settings as Cog, WifiOff } from 'lucide-react';
-import { useEffect, type ComponentType } from 'react';
+import { lazy, Suspense, useEffect, type ComponentType } from 'react';
 import { WordRescue } from './components/WordRescue';
 import { cx } from './components/ui';
 import { navigate, useRoute, type Route } from './lib/router';
@@ -12,17 +12,24 @@ import { IS_IOS } from './lib/speech';
 // so fixed `bottom: 0` elements float mid-screen. There we pin them to the full screen height instead.
 const IOS_STANDALONE = IS_IOS && (navigator as unknown as { standalone?: boolean }).standalone === true;
 import Dashboard from './modes/Dashboard';
-import Drill from './modes/Drill';
-import Ladder from './modes/Ladder';
-import MistakePractice from './modes/MistakePractice';
-import Mistakes from './modes/Mistakes';
-import Monologue from './modes/Monologue';
-import Roleplay from './modes/Roleplay';
-import Settings from './modes/Settings';
-import Vocab from './modes/Vocab';
-import VocabReview from './modes/VocabReview';
-import Course from './modes/Course';
-import Sprint from './modes/Sprint';
+const Drill = lazy(() => import('./modes/Drill'));
+const Ladder = lazy(() => import('./modes/Ladder'));
+const MistakePractice = lazy(() => import('./modes/MistakePractice'));
+const Mistakes = lazy(() => import('./modes/Mistakes'));
+const Monologue = lazy(() => import('./modes/Monologue'));
+const Roleplay = lazy(() => import('./modes/Roleplay'));
+const Settings = lazy(() => import('./modes/Settings'));
+const Vocab = lazy(() => import('./modes/Vocab'));
+const VocabReview = lazy(() => import('./modes/VocabReview'));
+const Course = lazy(() => import('./modes/Course'));
+const Sprint = lazy(() => import('./modes/Sprint'));
+const Quiz = lazy(() => import('./modes/Quiz'));
+const Builder = lazy(() => import('./modes/Builder'));
+const Listen = lazy(() => import('./modes/Listen'));
+const Match = lazy(() => import('./modes/Match'));
+const Progress = lazy(() => import('./modes/Progress'));
+import { Confetti } from './components/Confetti';
+import { BadgeWatcher } from './components/BadgeWatcher';
 
 const SCREENS: Record<Route, ComponentType> = {
   home: Dashboard,
@@ -37,10 +44,15 @@ const SCREENS: Record<Route, ComponentType> = {
   settings: Settings,
   course: Course,
   sprint: Sprint,
+  quiz: Quiz,
+  builder: Builder,
+  listen: Listen,
+  match: Match,
+  progress: Progress,
 };
 
 const TABS: { route: Route; label: string; icon: typeof Home; match: Route[] }[] = [
-  { route: 'home', label: 'Trénink', icon: Home, match: ['home', 'ladder', 'drill', 'monologue', 'roleplay', 'sprint'] },
+  { route: 'home', label: 'Trénink', icon: Home, match: ['home', 'ladder', 'drill', 'monologue', 'roleplay', 'sprint', 'quiz', 'builder', 'listen', 'match', 'progress'] },
   { route: 'course', label: 'Učebnice', icon: GraduationCap, match: ['course'] },
   { route: 'vocab', label: 'Slovíčka', icon: BookOpen, match: ['vocab', 'vocab-review'] },
   { route: 'mistakes', label: 'Chyby', icon: AlertCircle, match: ['mistakes', 'mistake-practice'] },
@@ -137,10 +149,14 @@ export default function App() {
             Offline režim – slovíčka, Banka chyb a výslovnost fungují, AI hodnocení počká na internet.
           </div>
         )}
-        <Screen />
+        <Suspense fallback={<div className="py-20 text-center text-sm text-muted">Načítám…</div>}>
+          <Screen />
+        </Suspense>
       </main>
 
       <WordRescue />
+      <Confetti />
+      <BadgeWatcher />
 
       {toastMsg && (
         <div

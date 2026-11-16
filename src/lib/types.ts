@@ -23,6 +23,8 @@ export interface Settings {
   dailyGoal: number;
   /** speech-to-text: browser engine, AI transcription of a recording, or automatic choice */
   sttEngine: 'auto' | 'browser' | 'ai';
+  /** short sound effects and vibration in games */
+  sound: boolean;
 }
 
 export interface SrsState {
@@ -122,4 +124,17 @@ export interface AppState {
   levelLog: { level: number; ok: boolean; at: string; focus?: string | null }[];
   /** results of the offline phrase sprint, by phrase id */
   phraseStats: Record<string, PhraseStat>;
+  /** per mini-game: rounds played, best score, total correct answers */
+  games: Record<string, GameStat>;
+  /** achievement ids the learner has already been shown */
+  badgesSeen: string[];
+}
+
+export interface GameStat {
+  plays: number;
+  best: number;
+  correct: number;
+  /** best (lowest) time in seconds, for timed games */
+  bestTime?: number;
+  perfect?: number;
 }

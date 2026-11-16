@@ -12,8 +12,10 @@ interface UiState {
   rescueOpen: boolean;
   context: string;
   toast: { id: number; text: string } | null;
+  /** changes whenever confetti should burst */
+  confetti: number;
 }
-let ui: UiState = { rescueOpen: false, context: '', toast: null };
+let ui: UiState = { rescueOpen: false, context: '', toast: null, confetti: 0 };
 const ls = new Set<() => void>();
 const emit = () => ls.forEach((l) => l());
 const sub = (l: () => void) => (ls.add(l), () => ls.delete(l));
@@ -84,4 +86,9 @@ export function useOnline() {
     },
     () => navigator.onLine,
   );
+}
+
+/** Burst of confetti over the whole screen. */
+export function celebrate() {
+  setUi({ confetti: Date.now() });
 }

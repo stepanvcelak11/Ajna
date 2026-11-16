@@ -1,0 +1,62 @@
+// Achievements are derived from the stored progress, so nothing extra has to be tracked.
+import type { IconName, Tone } from '../components/icons';
+import { dayXp, streak, totalXp } from '../lib/store';
+import type { AppState } from '../lib/types';
+
+export interface Badge {
+  id: string;
+  title: string;
+  desc: string;
+  icon: IconName;
+  tone: Tone;
+  progress: (s: AppState) => [value: number, goal: number];
+}
+
+const sum = <T,>(a: T[], f: (x: T) => number) => a.reduce((n, x) => n + f(x), 0);
+const days = (s: AppState) => Object.values(s.days);
+const wordsSpoken = (s: AppState) => sum(days(s), (d) => d.words);
+const goalDays = (s: AppState) => days(s).filter((d) => dayXp(d) >= s.settings.dailyGoal).length;
+const phrasesKnown = (s: AppState) => Object.values(s.phraseStats).filter((p) => p.ok > p.fail).length;
+const game = (s: AppState, id: string) => s.games[id] ?? { plays: 0, best: 0, correct: 0 };
+const EXPLORE = ['drill', 'ladder', 'monologue', 'roleplay', 'sprint', 'quiz', 'builder', 'listen', 'match', 'vocab-review'];
+const explored = (s: AppState) => {
+  const seen = new Set<string>();
+  for (const d of days(s)) for (const k of Object.keys(d.modes ?? {})) seen.add(k);
+  return EXPLORE.filter((r) => seen.has(r)).length;
+};
+
+export const BADGES: Badge[] = [
+  { id: 'first', title: 'První krok', desc: 'Odpověz na první otázku', icon: 'flag', tone: 'violet', progress: (s) => [sum(days(s), (d) => d.answers), 1] },
+  { id: 'streak3', title: 'Rozjezd', desc: '3 dny v řadě', icon: 'flame', tone: 'orange', progress: (s) => [streak(s.days), 3] },
+  { id: 'streak7', title: 'Celý týden', desc: '7 dní v řadě', icon: 'flame', tone: 'orange', progress: (s) => [streak(s.days), 7] },
+  { id: 'streak30', title: 'Neúnavný', desc: '30 dní v řadě', icon: 'flame', tone: 'rose', progress: (s) => [streak(s.days), 30] },
+  { id: 'goal7', title: 'Cílevědomý', desc: 'Splň denní cíl 7×', icon: 'goal', tone: 'emerald', progress: (s) => [goalDays(s), 7] },
+  { id: 'goal30', title: 'Disciplína', desc: 'Splň denní cíl 30×', icon: 'goal', tone: 'emerald', progress: (s) => [goalDays(s), 30] },
+  { id: 'xp1000', title: 'Tisícovka', desc: 'Získej 1 000 XP', icon: 'sparkle', tone: 'amber', progress: (s) => [totalXp(s.days), 1000] },
+  { id: 'xp10000', title: 'Legenda', desc: 'Získej 10 000 XP', icon: 'trophy', tone: 'amber', progress: (s) => [totalXp(s.days), 10000] },
+  { id: 'talk1k', title: 'Mluvka', desc: 'Řekni 1 000 anglických slov', icon: 'mic', tone: 'sky', progress: (s) => [wordsSpoken(s), 1000] },
+  { id: 'talk10k', title: 'Řečník', desc: 'Řekni 10 000 anglických slov', icon: 'dialog', tone: 'sky', progress: (s) => [wordsSpoken(s), 10000] },
+  { id: 'vocab50', title: 'Sběratel', desc: 'Měj 50 slovíček v opakování', icon: 'cards', tone: 'pink', progress: (s) => [s.vocab.length, 50] },
+  { id: 'vocab200', title: 'Slovník', desc: 'Měj 200 slovíček v opakování', icon: 'book', tone: 'pink', progress: (s) => [s.vocab.length, 200] },
+  { id: 'phrases30', title: 'Frázista', desc: 'Zvládni 30 rychlých frází', icon: 'bolt', tone: 'orange', progress: (s) => [phrasesKnown(s), 30] },
+  { id: 'fix10', title: 'Opravář', desc: 'Úplně zvládni 10 svých chyb', icon: 'wrench', tone: 'rose', progress: (s) => [s.mistakes.filter((m) => m.mastered).length, 10] },
+  { id: 'quizPerfect', title: 'Bez chyby', desc: 'Kvíz 12/12', icon: 'medal', tone: 'violet', progress: (s) => [game(s, 'quiz').perfect ?? 0, 1] },
+  { id: 'builder50', title: 'Stavitel vět', desc: 'Slož 50 vět bez nápovědy', icon: 'layers', tone: 'indigo', progress: (s) => [game(s, 'builder').correct, 50] },
+  { id: 'listen50', title: 'Bystré ucho', desc: '50 správně zachycených vět v Poslechu', icon: 'sparkle', tone: 'teal', progress: (s) => [game(s, 'listen').correct, 50] },
+  {
+    id: 'matchFast',
+    title: 'Blesk',
+    desc: 'Párování bez chyby pod 60 s',
+    icon: 'bolt',
+    tone: 'lime',
+    progress: (s) => [game(s, 'match').bestTime !== undefined && game(s, 'match').bestTime! <= 60 ? 1 : 0, 1],
+  },
+  { id: 'explorer', title: 'Průzkumník', desc: `Vyzkoušej všech ${EXPLORE.length} cvičení`, icon: 'target', tone: 'slate', progress: (s) => [explored(s), EXPLORE.length] },
+];
+
+export function unlockedIds(s: AppState) {
+  return BADGES.filter((b) => {
+    const [v, g] = b.progress(s);
+    return v >= g;
+  }).map((b) => b.id);
+}
