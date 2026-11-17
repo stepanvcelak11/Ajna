@@ -154,6 +154,7 @@ export default function Dashboard() {
       </section>
 
       <StoryCard level={level} />
+      <TensesRow />
 
       {/* --- learning path --- */}
       <PathCard level={level} />
@@ -561,5 +562,20 @@ function StoryCard({ level }: { level: number }) {
         <ChevronRight className="relative size-5" />
       </button>
     </section>
+  );
+}
+
+function TensesRow() {
+  return (
+    <button onClick={() => navigate('tenses')} className="-mt-2 flex w-full items-center gap-3 rounded-2xl border border-line bg-surface p-3 text-left transition active:scale-[0.99]">
+      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 text-white">
+        <Icon name="ladder" className="size-5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-bold">Slovesné časy</span>
+        <span className="block text-xs text-muted">Tabulka všech časů, příklady a procvičování</span>
+      </span>
+      <ChevronRight className="size-4 text-muted" />
+    </button>
   );
 }

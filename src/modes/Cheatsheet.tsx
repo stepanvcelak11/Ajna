@@ -23,6 +23,16 @@ export default function Cheatsheet() {
   return (
     <div className="space-y-4">
       <ModeHeader title="Gramatický tahák" subtitle="Pravidla česky, příklady a typické chyby" />
+      <Card onClick={() => navigate('tenses')} className="flex items-center gap-3 border-accent/40">
+        <span className="grid size-9 place-items-center rounded-xl bg-accent text-white">
+          <Target className="size-5" />
+        </span>
+        <span className="flex-1">
+          <span className="block text-sm font-bold">Slovesné časy</span>
+          <span className="block text-xs text-muted">Všechny časy v jedné tabulce + procvičování</span>
+        </span>
+        <ChevronRight className="size-4 text-muted" />
+      </Card>
       {LEVELS.map((l) => (
         <Card key={l.id} className="p-0">
           <button onClick={() => setOpen(open === l.id ? 0 : l.id)} className="flex w-full items-center gap-3 p-4 text-left">

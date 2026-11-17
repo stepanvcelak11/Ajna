@@ -31,6 +31,7 @@ const DAILY_GAMES: { route: Route; title: string; target: number; icon: IconName
   { route: 'wordsearch', title: 'Osmisměrka', target: 1, icon: 'target', tone: 'emerald' },
   { route: 'crossword', title: 'Křížovka', target: 1, icon: 'layers', tone: 'rose' },
   { route: 'dialogs', title: 'Dialog: 5 replik', target: 5, icon: 'dialog', tone: 'rose' },
+  { route: 'tense-drill', title: 'Slovesné časy: 10 úkolů', target: 10, icon: 'ladder', tone: 'violet' },
   { route: 'gaps', title: 'Doplňovačka: 10 vět', target: 10, icon: 'book', tone: 'sky' },
   { route: 'hangman', title: 'Šibenice: 6 slov', target: 6, icon: 'target', tone: 'emerald' },
 ];
