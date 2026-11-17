@@ -1,7 +1,10 @@
-// Big on-screen keyboard for writing games. Czech QWERTZ layout by default (Y and Z where Czech keyboards have them),
-// QWERTY on request. Using it instead of the phone keyboard also keeps the iPhone screen from shifting.
+// Big on-screen keyboard (Wordle, crossword, hangman, and writing games when the user picks it).
+// Czech QWERTZ layout by default (Y and Z where Czech keyboards have them), QWERTY on request.
+// Built to feel like a phone keyboard: a key fires the moment the finger touches it (not on release),
+// several fingers can type at once, the gaps between keys still count, a bubble shows the letter
+// above the finger, and holding backspace keeps deleting.
 import { CornerDownLeft, Delete } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type MouseEvent as RMouseEvent, type PointerEvent as RPointerEvent, type ReactNode } from 'react';
 import { isTypingTarget } from '../lib/ui';
 import { cx } from './ui';
 
@@ -38,6 +41,11 @@ export function Keyboard({
   compact?: boolean;
 }) {
   const [layout, setLayout] = useState<Layout>(loadLayout);
+  const [pop, setPop] = useState<string | null>(null);
+  const popTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const repeat = useRef<{ t?: ReturnType<typeof setTimeout>; i?: ReturnType<typeof setInterval> }>({});
+  const onKeyRef = useRef(onKey);
+  onKeyRef.current = onKey;
 
   // physical keyboard too (desktop)
   useEffect(() => {
@@ -59,62 +67,96 @@ export function Keyboard({
     return () => window.removeEventListener('keydown', h);
   });
 
-  const key = cx(compact ? 'h-12' : 'h-[3.25rem]', 'min-w-0 flex-1 rounded-xl text-lg font-bold uppercase shadow-sm transition active:scale-95 active:brightness-90 touch-manipulation');
+  const stopRepeat = () => {
+    clearTimeout(repeat.current.t);
+    clearInterval(repeat.current.i);
+  };
+  useEffect(() => () => (stopRepeat(), clearTimeout(popTimer.current)), []);
+
+  /** Fire on touch-down. Keyboard activation (Enter/Space on a focused key) still comes as a click with detail 0. */
+  const down = (k: string, fn: () => void) => ({
+    onPointerDown: (e: RPointerEvent) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      e.preventDefault();
+      fn();
+      if (k.length === 1 && /[a-z]/.test(k)) {
+        setPop(k);
+        clearTimeout(popTimer.current);
+        popTimer.current = setTimeout(() => setPop(null), 160);
+      }
+      if (k === 'back') {
+        stopRepeat();
+        repeat.current.t = setTimeout(() => {
+          repeat.current.i = setInterval(() => onKeyRef.current('back'), 70);
+        }, 420);
+      }
+    },
+    onPointerUp: k === 'back' ? stopRepeat : undefined,
+    onPointerCancel: k === 'back' ? stopRepeat : undefined,
+    onPointerLeave: k === 'back' ? stopRepeat : undefined,
+    onClick: (e: RMouseEvent) => {
+      if (e.detail === 0) fn();
+    },
+  });
+
+  const h = compact ? 'h-[3.1rem]' : 'h-[3.6rem]';
+  // the button is the whole cell (no dead gaps); the visible key is drawn inside with padding
+  const cell = ({ id, k, grow = 1, label, face, disabled, fn, edge }: { id?: string; k: string; grow?: number; label?: string; face: string; disabled?: boolean; fn: () => void; edge?: boolean }) => (
+    <button
+      key={id ?? k}
+      type="button"
+      aria-label={edge ? undefined : (label ?? k)}
+      aria-hidden={edge || undefined}
+      tabIndex={edge ? -1 : undefined}
+      disabled={disabled}
+      style={{ flexGrow: grow, flexBasis: 0 }}
+      className={cx('relative min-w-0 touch-none px-[2.5px] py-[4px] outline-none disabled:opacity-40', h)}
+      {...down(k, fn)}
+    >
+      <span className={cx('grid h-full w-full place-items-center rounded-[10px] shadow-[0_1px_0_rgba(0,0,0,0.25)]', face)}>{edge ? null : keyFace(k)}</span>
+      {pop === k && !edge && k.length === 1 && (
+        <span className="pointer-events-none absolute bottom-[85%] left-1/2 z-20 grid h-14 w-11 -translate-x-1/2 place-items-center rounded-xl border border-line bg-surface text-3xl font-bold uppercase shadow-xl">
+          {k}
+        </span>
+      )}
+    </button>
+  );
+  const keyFace = (k: string): ReactNode =>
+    k === 'back' ? <Delete className="size-6" /> : k === 'enter' ? <CornerDownLeft className="size-6" /> : k === ' ' ? 'mezera' : k === 'layout' ? (layout === 'qwertz' ? 'QWERTZ' : 'QWERTY') : k;
+
+  const letter = 'text-[22px] font-semibold uppercase';
+  const plain = 'bg-surface-2 border border-line';
+  const fnFace = 'bg-surface-3 border border-line';
+
   return (
-    <div className="select-none space-y-1.5" onContextMenu={(e) => e.preventDefault()}>
+    <div className="-mx-1.5 select-none [-webkit-tap-highlight-color:transparent]" onContextMenu={(e) => e.preventDefault()}>
       {LAYOUTS[layout].map((row, r) => (
-        <div key={row} className={cx('flex gap-1', r === 1 && 'px-[4.5%]')}>
-          {[...row].map((ch) => (
-            <button key={ch} type="button" onClick={() => onKey(ch)} className={cx(key, marks?.[ch] ?? 'border border-line bg-surface-2')}>
-              {ch}
-            </button>
-          ))}
-          {r === 2 && (
-            <button type="button" onClick={() => onKey('back')} aria-label="Smazat" className={cx(key, 'grid flex-[1.6] place-items-center border border-line bg-surface-3')}>
-              <Delete className="size-6" />
-            </button>
-          )}
+        <div key={row} className="flex">
+          {/* half-key edges on the middle row still type the nearest letter, like a phone keyboard */}
+          {r === 1 && cell({ id: 'edge-l', k: row[0], grow: 0.5, face: 'bg-transparent', edge: true, fn: () => onKey(row[0]) })}
+          {r === 2 && <span style={{ flexGrow: 1.5, flexBasis: 0 }} />}
+          {[...row].map((ch) => cell({ k: ch, face: cx(letter, marks?.[ch] ?? plain), fn: () => onKey(ch) }))}
+          {r === 1 && cell({ id: 'edge-r', k: row[row.length - 1], grow: 0.5, face: 'bg-transparent', edge: true, fn: () => onKey(row[row.length - 1]) })}
+          {r === 2 && cell({ k: 'back', grow: 1.5, label: 'Smazat', face: fnFace, fn: () => onKey('back') })}
         </div>
       ))}
-      <div className="flex gap-1">
-        <button
-          type="button"
-          onClick={() => {
-            const n = layout === 'qwertz' ? 'qwerty' : 'qwertz';
-            setLayout(n);
-            try {
-              localStorage.setItem(KEY, n);
-            } catch {
-              /* optional */
-            }
-          }}
-          className={cx(key, 'border border-line bg-surface-3 text-[10px] normal-case text-muted', space || onEnter ? 'flex-[1.4]' : 'mx-auto h-8 max-w-28')}
-          aria-label="Přepnout rozložení klávesnice"
-        >
-          {layout === 'qwertz' ? 'QWERTZ' : 'QWERTY'}
-        </button>
-        {space && (
-          <>
-            <button type="button" onClick={() => onKey("'")} className={cx(key, 'border border-line bg-surface-2')}>
-              '
-            </button>
-            <button type="button" onClick={() => onKey(' ')} className={cx(key, 'flex-[4] border border-line bg-surface-2 text-xs normal-case text-muted')}>
-              mezera
-            </button>
-          </>
-        )}
-        {onEnter && (
-          <button
-            type="button"
-            disabled={enterDisabled}
-            onClick={onEnter}
-            aria-label="Potvrdit"
-            className={cx(key, 'grid flex-[2] place-items-center bg-accent text-white disabled:opacity-40')}
-          >
-            <CornerDownLeft className="size-6" />
-          </button>
-        )}
+      <div className="flex">
+        {cell({ k: 'layout', grow: space || onEnter ? 1.6 : 1, label: 'Přepnout rozložení klávesnice', face: cx(fnFace, 'text-[10px] font-semibold text-muted'), fn: () => toggleLayout() })}
+        {space && cell({ k: "'", face: cx(plain, 'text-xl font-bold'), fn: () => onKey("'") })}
+        {space && cell({ k: ' ', grow: 4.4, label: 'Mezera', face: cx(plain, 'text-xs text-muted'), fn: () => onKey(' ') })}
+        {onEnter && cell({ k: 'enter', grow: 2, label: 'Potvrdit', disabled: enterDisabled, face: 'bg-accent text-white', fn: () => !enterDisabled && onEnter() })}
+        {!space && !onEnter && <span className="flex-[3]" />}
       </div>
     </div>
   );
+
+  function toggleLayout() {
+    const n = layout === 'qwertz' ? 'qwerty' : 'qwertz';
+    setLayout(n);
+    try {
+      localStorage.setItem(KEY, n);
+    } catch {
+      /* optional */
+    }
+  }
 }

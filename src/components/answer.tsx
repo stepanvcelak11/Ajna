@@ -1,6 +1,6 @@
 // Speaking-or-writing games: a start screen to pick ONE input mode, and the answer boxes for each mode.
 import { Keyboard, Mic, Send } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Keyboard as Kb } from './Keyboard';
 import { sttSupported } from '../lib/speech';
 import { canTranscribe } from '../lib/llm';
@@ -88,7 +88,20 @@ export function ModeBadge({ mode }: { mode: InputMode }) {
   );
 }
 
-/** Writing games: the answer is typed on the app's own big keyboard (no autocorrect – the spelling has to be yours). */
+type KbMode = 'phone' | 'app';
+const KB_MODE = 'ajna-kb-mode';
+function loadKb(): KbMode {
+  try {
+    return localStorage.getItem(KB_MODE) === 'app' ? 'app' : 'phone';
+  } catch {
+    return 'phone';
+  }
+}
+
+/**
+ * Writing games: the answer is typed either on the phone's own keyboard (default, with autocorrect,
+ * auto-capitals and suggestions switched off so the spelling has to be yours) or on the app's big keyboard.
+ */
 export function TypeAnswer({
   onSubmit,
   resetKey,
@@ -101,7 +114,13 @@ export function TypeAnswer({
   submitLabel?: string;
 }) {
   const [v, setV] = useState('');
+  const [kb, setKb] = useState<KbMode>(loadKb);
+  const input = useRef<HTMLInputElement>(null);
   useEffect(() => setV(''), [resetKey]);
+  // keep the phone keyboard open from one question to the next
+  useEffect(() => {
+    if (kb === 'phone') input.current?.focus({ preventScroll: true });
+  }, [resetKey, kb]);
   const send = () => {
     const t = v.trim();
     if (!t) return;
@@ -112,25 +131,68 @@ export function TypeAnswer({
     if (k === 'back') setV((x) => x.slice(0, -1));
     else setV((x) => (k === ' ' && (!x || x.endsWith(' ')) ? x : x + k).slice(0, 120));
   };
+  const switchKb = () => {
+    const n: KbMode = kb === 'phone' ? 'app' : 'phone';
+    setKb(n);
+    try {
+      localStorage.setItem(KB_MODE, n);
+    } catch {
+      /* optional */
+    }
+  };
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <div className="flex items-center gap-2">
-        <div className="flex min-h-14 min-w-0 flex-1 items-center rounded-2xl border border-accent/50 bg-surface-2 px-4 text-[19px] font-semibold tracking-wide">
-          {v ? (
-            <span className="break-all">
-              {v}
-              <span className="ml-0.5 inline-block h-6 w-0.5 translate-y-1 animate-pulse bg-accent" />
-            </span>
-          ) : (
-            <span className="text-base font-normal text-muted/70">{placeholder}</span>
-          )}
-        </div>
-        <Btn variant="primary" className="h-14 shrink-0 px-4" disabled={!v.trim()} onClick={send}>
+        {kb === 'phone' ? (
+          <input
+            ref={input}
+            value={v}
+            onChange={(e) => setV(e.target.value.slice(0, 120))}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                send();
+              }
+            }}
+            placeholder={placeholder}
+            type="text"
+            inputMode="text"
+            enterKeyHint="done"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="none"
+            spellCheck={false}
+            data-1p-ignore
+            className="h-14 min-w-0 flex-1 rounded-2xl border border-accent/50 bg-surface-2 px-4 text-[19px] font-semibold tracking-wide outline-none placeholder:text-base placeholder:font-normal placeholder:text-muted/70 focus:border-accent focus:ring-2 focus:ring-accent/30"
+          />
+        ) : (
+          <div className="flex min-h-14 min-w-0 flex-1 items-center rounded-2xl border border-accent/50 bg-surface-2 px-4 text-[19px] font-semibold tracking-wide">
+            {v ? (
+              <span className="break-all">
+                {v}
+                <span className="ml-0.5 inline-block h-6 w-0.5 translate-y-1 animate-pulse bg-accent" />
+              </span>
+            ) : (
+              <span className="text-base font-normal text-muted/70">{placeholder}</span>
+            )}
+          </div>
+        )}
+        <Btn
+          variant="primary"
+          className="h-14 shrink-0 px-4"
+          disabled={!v.trim()}
+          // keep focus in the input so the phone keyboard doesn't close and reopen
+          onPointerDown={(e) => kb === 'phone' && e.preventDefault()}
+          onClick={send}
+        >
           <Send className="size-4" />
           <span className="hidden min-[380px]:inline">{submitLabel}</span>
         </Btn>
       </div>
-      <Kb onKey={key} onEnter={send} enterDisabled={!v.trim()} />
+      <button type="button" onClick={switchKb} className="flex items-center gap-1 text-[11px] font-semibold text-accent">
+        <Keyboard className="size-3.5" /> {kb === 'phone' ? 'Použít velkou klávesnici aplikace' : 'Použít klávesnici telefonu'}
+      </button>
+      {kb === 'app' && <Kb onKey={key} onEnter={send} enterDisabled={!v.trim()} />}
     </div>
   );
 }
