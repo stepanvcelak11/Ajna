@@ -55,6 +55,7 @@ const Hangman = lazy(() => import('./modes/Hangman'));
 const Gaps = lazy(() => import('./modes/Gaps'));
 const Tenses = lazy(() => import('./modes/Tenses'));
 const TenseDrill = lazy(() => import('./modes/TenseDrill'));
+const TenseSteps = lazy(() => import('./modes/TenseSteps'));
 import { Confetti } from './components/Confetti';
 import { BadgeWatcher } from './components/BadgeWatcher';
 import { Onboarding } from './components/Onboarding';
@@ -103,6 +104,7 @@ const SCREENS: Record<Route, ComponentType> = {
   gaps: Gaps,
   tenses: Tenses,
   'tense-drill': TenseDrill,
+  'tense-steps': TenseSteps,
 };
 
 const TABS: { route: Route; label: string; icon: typeof Home; match: Route[] }[] = [

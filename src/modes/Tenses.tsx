@@ -1,4 +1,4 @@
-import { AlertTriangle, ChevronLeft, ChevronRight, Dumbbell, Table2 } from 'lucide-react';
+import { AlertTriangle, ChevronLeft, ChevronRight, Dumbbell, Footprints, Table2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { SpeakButton } from '../components/Speak';
 import { Btn, Card, Label, ModeHeader, cx } from '../components/ui';
@@ -103,6 +103,16 @@ export function TimelineSvg({ kind, className }: { kind: Timeline; className?: s
   );
 }
 
+/** Open the steps (Schody) of one tense. */
+export function openSteps(id: TenseId) {
+  try {
+    sessionStorage.setItem('ajna-steps-open', id);
+  } catch {
+    /* optional */
+  }
+  navigate('tense-steps');
+}
+
 /** Slovesné časy: one table with all tenses, then a page for each. */
 export default function Tenses() {
   const level = useStore((s) => s.settings.level);
@@ -136,6 +146,21 @@ export default function Tenses() {
         <span className="relative min-w-0 flex-1">
           <span className="block text-base font-extrabold">Procvičovat časy</span>
           <span className="block text-xs text-white/85">Vyber si, které časy chceš, a jak: ťukáním, psaním nebo mluvením</span>
+        </span>
+        <ChevronRight className="relative size-5" />
+      </button>
+
+      <button
+        onClick={() => navigate('tense-steps')}
+        className="relative -mt-2 flex w-full items-center gap-4 overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-600 p-4 text-left text-white shadow-md transition active:scale-[0.99]"
+      >
+        <span className="pointer-events-none absolute -right-6 -top-8 size-28 rounded-full bg-white/15" />
+        <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-white/20">
+          <Footprints className="size-7" />
+        </span>
+        <span className="relative min-w-0 flex-1">
+          <span className="block text-base font-extrabold">Schody: jeden čas pořádně</span>
+          <span className="block text-xs text-white/85">Od krátkých vět po souvětí a vlastní věty, dokud čas neumíš</span>
         </span>
         <ChevronRight className="relative size-5" />
       </button>
@@ -331,9 +356,14 @@ function TenseView({ t, onBack, onGo }: { t: Tense; onBack: () => void; onGo: (i
         ))}
       </section>
 
-      <Btn variant="primary" className="h-12 w-full" onClick={() => practiseTenses([t.id])}>
-        <Dumbbell className="size-4" /> Procvičit jen {t.en}
-      </Btn>
+      <div className="flex gap-2">
+        <Btn variant="primary" className="h-12 flex-1 text-xs" onClick={() => openSteps(t.id)}>
+          <Footprints className="size-4" /> Schody: {t.en}
+        </Btn>
+        <Btn className="h-12 flex-1 text-xs" onClick={() => practiseTenses([t.id])}>
+          <Dumbbell className="size-4" /> Rychlý trénink
+        </Btn>
+      </div>
 
       <div className="flex gap-2">
         {prev ? (
